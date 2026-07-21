@@ -1,4 +1,4 @@
-# pages.py  -  X4G v9.5
+# pages.py  -  X4G v9.8
 # شامل: LOGIN_HTML, DASHBOARD_HTML, get_public_page_html()
 
 # لوگوی X4G (به‌صورت base64 داخلی، بدون نیاز به هاست خارجی)
@@ -61,7 +61,7 @@ input:focus+.ic{color:var(--accent)}
   <div class="card">
     <div class="brand">
       <div class="brand-img"><img src="data:image/png;base64,__LOGO_B64__" alt="X4G"></div>
-      <div><div class="brand-name">X4G</div><div class="brand-sub">v9.5</div></div>
+      <div><div class="brand-name">X4G</div><div class="brand-sub">v9.8</div></div>
     </div>
     <h1>ورود به پنل</h1>
     <p class="sub">رمز عبور را برای دسترسی به داشبورد وارد کنید</p>
@@ -80,7 +80,7 @@ input:focus+.ic{color:var(--accent)}
       </div>
       <button class="btn" type="submit" id="btn"><i class="ti ti-login-2"></i> ورود به داشبورد</button>
     </form>
-    <div class="footer">پشتیبانی <a href="https://t.me/Farajian2004f" target="_blank"><i class="ti ti-brand-telegram"></i>@Farajian2004f</a></div>
+    <div class="footer">پشتیبانی <a href="https://t.me/X4GHUB" target="_blank"><i class="ti ti-brand-telegram"></i>@X4GHUB</a></div>
   </div>
 </div>
 <script>
@@ -612,6 +612,14 @@ a{color:inherit;text-decoration:none}
 .cfg-exp-col{flex-shrink:0;min-width:110px}
 .cfg-badges-col{display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:flex-end}
 .cfg-actions{display:flex;gap:5px;flex-shrink:0}
+.links-toolbar{display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.bulk-selall{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--t2);cursor:pointer;user-select:none;flex-shrink:0}
+.bulk-selall input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.bulk-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--card);border:1px solid var(--card-b);border-radius:14px;padding:10px 16px;margin-bottom:12px}
+.bulk-count{font-size:12.5px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:6px}
+.bulk-actions{display:flex;gap:6px;flex-wrap:wrap}
+.cfg-select{display:flex;align-items:center;flex-shrink:0}
+.cfg-select input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
 .proto-chip{font-size:9px;padding:3px 8px;border-radius:6px;font-weight:700;white-space:nowrap}
 .pc-ws{background:var(--accent-d);color:var(--accent2)}
 .pc-xhttp{background:var(--purple-bg);color:#A78BFA}
@@ -685,70 +693,23 @@ a{color:inherit;text-decoration:none}
   .main{padding:62px 12px 50px}
   .sub-grid,.cfg-grid,.conn-grid{grid-template-columns:1fr}
 }
+.cfgdash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.cfgdash-item{background:var(--card);border:1px solid var(--card-b);border-radius:14px;padding:13px 14px;cursor:pointer;transition:.15s}
+.cfgdash-item:hover{border-color:var(--card-bh)}
+.cfgdash-item.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.cfgdash-item-top{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.cfgdash-item-label{font-size:12.5px;font-weight:700;color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cfgdash-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.cfgdash-stat{background:var(--accent-d);border:1px solid var(--card-b);border-radius:12px;padding:12px 13px}
+.cfgdash-stat-l{font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.cfgdash-stat-v{font-size:16px;font-weight:800;color:var(--t1)}
+.cfgdash-ip-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;background:var(--accent-d);border:1px solid var(--card-b);margin-bottom:6px;flex-wrap:wrap}
+.cfgdash-ip-row .ip{font-family:ui-monospace,monospace;font-size:12px;color:var(--t1);display:flex;align-items:center;gap:7px}
+.cfgdash-ip-meta{display:flex;align-items:center;gap:12px;font-size:10.5px;color:var(--t3);margin-right:auto;flex-wrap:wrap}
 </style>
 </head>
 <body>
 <div class="toast" id="toast"></div>
-<div class="modal-bg" id="modal-links">
-  <div class="modal-v2" style="max-width:500px">
-    <div class="lmodal-head">
-      <button class="modal-v2-close" onclick="closeModal('modal-links')"><i class="ti ti-x"></i></button>
-      <div class="lmodal-icon-row">
-        <div class="lmodal-icon"><i class="ti ti-link-plus"></i></div>
-        <div>
-          <div class="lmodal-title-v2">مدیریت کانفیگ‌های <span id="modal-sub-name" style="color:var(--accent2)">—</span></div>
-          <div class="lmodal-sub-v2">کانفیگ‌هایی که می‌خواهید در این گروه باشند را انتخاب کنید</div>
-        </div>
-      </div>
-      <div class="lmodal-search">
-        <i class="ti ti-search"></i>
-        <input type="text" id="lmodal-search-inp" placeholder="جستجوی کانفیگ..." oninput="filterLmodal(this.value)">
-      </div>
-      <div class="lmodal-quickbar">
-        <button class="lmodal-qbtn" onclick="lmodalSelectAll(true)"><i class="ti ti-checks"></i> انتخاب همه</button>
-        <button class="lmodal-qbtn" onclick="lmodalSelectAll(false)"><i class="ti ti-x"></i> لغو همه</button>
-        <span class="lmodal-count" id="lmodal-count">۰ انتخاب شده</span>
-      </div>
-    </div>
-    <div class="lmodal-list" id="modal-links-body">در حال بارگذاری...</div>
-    <div class="lmodal-footer">
-      <div class="lmodal-footer-info"><i class="ti ti-info-circle"></i> تغییرات بلافاصله اعمال می‌شود</div>
-      <div class="lmodal-footer-btns">
-        <button class="btn btn-o" onclick="closeModal('modal-links')">بستن</button>
-        <button class="btn btn-p" id="modal-save-btn" onclick="saveSubLinks()"><i class="ti ti-check"></i> ذخیره</button>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="modal-bg" id="modal-create-sub">
-  <div class="modal-v2">
-    <div class="modal-v2-head">
-      <button class="modal-v2-close" onclick="closeModal('modal-create-sub')"><i class="ti ti-x"></i></button>
-      <div class="modal-v2-icon"><i class="ti ti-folder-plus"></i></div>
-      <div class="modal-v2-title">ساخت گروه جدید</div>
-      <div class="modal-v2-sub">یک صفحه پابلیک مجزا برای مدیریت کانفیگ‌ها بسازید</div>
-    </div>
-    <div class="modal-v2-body">
-      <div class="modal-v2-field">
-        <label><i class="ti ti-tag"></i> نام گروه</label>
-        <input class="modal-v2-input" id="ns-name" placeholder="مثلاً: کانال تلگرام">
-      </div>
-      <div class="modal-v2-field">
-        <label><i class="ti ti-align-left"></i> توضیحات (اختیاری)</label>
-        <input class="modal-v2-input" id="ns-desc" placeholder="توضیح کوتاه درباره این گروه">
-      </div>
-      <div class="modal-v2-field" style="margin-bottom:0">
-        <label><i class="ti ti-lock"></i> رمز صفحه پابلیک (اختیاری)</label>
-        <input class="modal-v2-input" id="ns-pw" type="password" placeholder="خالی بگذارید = بدون رمز">
-      </div>
-      <div class="cl" style="margin-top:14px"><i class="ti ti-info-circle"></i><span>صفحه پابلیک این گروه با یک لینک منحصر‌به‌فرد در اینترنت در دسترس خواهد بود.</span></div>
-      <div class="modal-v2-footer">
-        <button class="btn btn-o" onclick="closeModal('modal-create-sub')" style="flex:.6">انصراف</button>
-        <button class="btn btn-pur" onclick="createSub()"><i class="ti ti-folder-plus"></i> ساخت گروه</button>
-      </div>
-    </div>
-  </div>
-</div>
 <div class="modal-bg" id="modal-edit-link">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('modal-edit-link')"><i class="ti ti-x"></i></button>
@@ -793,6 +754,13 @@ a{color:inherit;text-decoration:none}
     </div>
   </div>
 </div>
+<div class="modal-bg" id="modal-link-chart">
+  <div class="modal" style="max-width:640px">
+    <button class="modal-close" onclick="closeModal('modal-link-chart')"><i class="ti ti-x"></i></button>
+    <div class="modal-title" id="lc-title"><i class="ti ti-chart-line"></i> نمودار مصرف</div>
+    <div style="height:280px;margin-top:10px"><canvas id="lc-canvas"></canvas></div>
+  </div>
+</div>
 <div class="mob-top">
   <div class="ml">
     <div class="mob-logo"><img src="data:image/png;base64,__LOGO_B64__" alt="X4G"></div>
@@ -808,14 +776,13 @@ a{color:inherit;text-decoration:none}
   <button class="sb-close" id="close-sb"><i class="ti ti-x"></i></button>
   <div class="logo">
     <div class="logo-img"><img src="data:image/png;base64,__LOGO_B64__" alt="X4G"></div>
-    <div><div class="logo-name">X4G</div><div class="logo-sub">v9.5</div></div>
+    <div><div class="logo-name">X4G</div><div class="logo-sub">v9.8</div></div>
   </div>
   <div class="nav-wrap">
     <div class="nav-sec">پنل</div>
     <div class="nav-it on" data-pg="overview"><i class="ti ti-layout-dashboard"></i> داشبورد</div>
     <div class="nav-it" data-pg="links"><i class="ti ti-link-plus"></i> کانفیگ‌ها <span class="nav-badge" id="links-nb">0</span></div>
-    <div class="nav-it" data-pg="subgroups"><i class="ti ti-folders"></i> گروه‌های ساب <span class="nav-badge" id="subs-nb">0</span></div>
-    <div class="nav-it" data-pg="subscriptions"><i class="ti ti-rss"></i> سابسکریپشن</div>
+    <div class="nav-it" data-pg="cfgdash"><i class="ti ti-chart-infographic"></i> داشبورد کانفیگ‌ها</div>
     <div class="nav-it" data-pg="traffic"><i class="ti ti-chart-area"></i> ترافیک</div>
     <div class="nav-it" data-pg="connections"><i class="ti ti-plug-connected"></i> اتصالات <span class="nav-badge" id="conns-nb">0</span></div>
     <div class="nav-sec">سیستم</div>
@@ -846,20 +813,7 @@ a{color:inherit;text-decoration:none}
     <div class="metric"><div class="m-icon"><i class="ti ti-plug-connected"></i></div><div class="m-label">اتصالات فعال</div><div class="m-val" id="m-conns">—</div><div class="m-sub"><span class="dot dg pulse"></span> WebSocket / XHTTP زنده</div></div>
     <div class="metric"><div class="m-icon"><i class="ti ti-transfer"></i></div><div class="m-label">کل ترافیک</div><div class="m-val" id="m-traffic">—<span class="m-unit">MB</span></div><div class="m-sub">از راه‌اندازی</div></div>
     <div class="metric suc"><div class="m-icon suc"><i class="ti ti-link"></i></div><div class="m-label">کانفیگ فعال</div><div class="m-val" id="m-alinks">—</div><div class="m-sub" id="m-lsub">از کل</div></div>
-    <div class="metric pur"><div class="m-icon pur"><i class="ti ti-folders"></i></div><div class="m-label">گروه‌های ساب</div><div class="m-val" id="m-subs">—</div><div class="m-sub">فعال</div></div>
-  </div>
-  <div class="vless-box">
-    <div class="vl-header">
-      <div class="vl-title"><i class="ti ti-link"></i> لینک پیش‌فرض (بدون محدودیت)</div>
-      <span class="badge bg-blue"><span class="dot db"></span> TLS 443 · WS</span>
-    </div>
-    <div class="vl-code" id="vless-main">در حال دریافت...</div>
-    <div class="vl-actions">
-      <button class="btn btn-p" onclick="cpText('vless-main')"><i class="ti ti-copy"></i> کپی</button>
-      <button class="btn btn-g" onclick="qrFor('vless-main')"><i class="ti ti-qrcode"></i> QR</button>
-      <button class="btn btn-o" onclick="navTo('links')"><i class="ti ti-link-plus"></i> کانفیگ محدود</button>
-      <button class="btn btn-pur" onclick="navTo('subgroups')"><i class="ti ti-folders"></i> گروه‌های ساب</button>
-    </div>
+    <div class="metric dan" style="cursor:pointer" onclick="navTo('errors')" title="مشاهده جزئیات خطاها"><div class="m-icon dan"><i class="ti ti-alert-triangle"></i></div><div class="m-label">خطاها</div><div class="m-val" id="m-errs">—</div><div class="m-sub">از راه‌اندازی</div></div>
   </div>
   <div class="g3">
     <div class="card"><div class="card-title"><i class="ti ti-chart-area"></i> ترافیک ساعتی (MB)</div><div class="ch"><canvas id="ch1"></canvas></div></div>
@@ -870,8 +824,7 @@ a{color:inherit;text-decoration:none}
       <div class="card-title"><i class="ti ti-activity"></i> وضعیت سرویس</div>
       <div class="sr"><span class="sr-k"><i class="ti ti-shield-check"></i> UUID Auth</span><span class="sr-v" style="color:var(--green-t)">● فعال · سخت‌گیرانه</span></div>
       <div class="sr"><span class="sr-k"><i class="ti ti-circle-check"></i> VLESS / WS Tunnel</span><span class="sr-v" style="color:var(--green-t)">● فعال</span></div>
-      <div class="sr"><span class="sr-k"><i class="ti ti-bolt"></i> Siz10a XHTTP Ultra</span><span class="sr-v" style="color:var(--green-t)">● فعال · 3 mode</span></div>
-      <div class="sr"><span class="sr-k"><i class="ti ti-folders"></i> Sub Groups</span><span class="sr-v" style="color:var(--green-t)">● فعال v9</span></div>
+      <div class="sr"><span class="sr-k"><i class="ti ti-bolt"></i> Siz10a XHTTP Ultra</span><span class="sr-v" style="color:var(--green-t)">● فعال · mode: auto</span></div>
       <div class="sr"><span class="sr-k"><i class="ti ti-rss"></i> Subscription API</span><span class="sr-v" style="color:var(--green-t)">● فعال</span></div>
       <div class="sr"><span class="sr-k"><i class="ti ti-clock"></i> آپتایم</span><span class="sr-v" id="uptime-inline">—</span></div>
       <div class="sr" style="flex-direction:column;align-items:flex-start;gap:4px">
@@ -885,14 +838,14 @@ a{color:inherit;text-decoration:none}
     </div>
   </div>
   <div class="dash-footer">
-    <span class="df-text">X4G v9.5 · Railway</span>
-    <a class="df-link" href="https://t.me/Farajian2004f" target="_blank"><i class="ti ti-brand-telegram"></i> t.me/Farajian2004f</a>
+    <span class="df-text">X4G v9.8 · Railway</span>
+    <a class="df-link" href="https://t.me/X4GHUB" target="_blank"><i class="ti ti-brand-telegram"></i> t.me/X4GHUB</a>
     
   </div>
 </section>
 <section class="pg" id="pg-links">
   <div class="topbar">
-    <div><div class="tb-title"><i class="ti ti-link-plus"></i> کانفیگ‌ها</div><div class="tb-sub">ساخت و مدیریت کانفیگ با سهمیه، انقضا و گروه‌بندی</div></div>
+    <div><div class="tb-title"><i class="ti ti-link-plus"></i> کانفیگ‌ها</div><div class="tb-sub">ساخت و مدیریت کانفیگ با سهمیه و انقضا</div></div>
     <div class="tb-right"><span class="badge bg-blue" id="links-pg-cnt">۰ کانفیگ</span></div>
   </div>
   <div class="create-panel">
@@ -913,8 +866,7 @@ a{color:inherit;text-decoration:none}
           </div>
         </div>
         <div class="cp-block">
-          <div class="cp-block-label"><i class="ti ti-folders"></i> گروه ساب و انقضا</div>
-          <select class="cp-input-full fs" id="nl-sub"><option value="">— بدون گروه —</option></select>
+          <div class="cp-block-label"><i class="ti ti-calendar-due"></i> انقضا</div>
           <div class="cp-mini-row">
             <input class="cp-input-full" id="nl-exp" type="number" min="0" step="1" placeholder="انقضا (روز) · 0 = نامحدود">
           </div>
@@ -945,27 +897,20 @@ a{color:inherit;text-decoration:none}
         <div class="cp-block-label"><i class="ti ti-plug-connected"></i> پروتکل انتقال</div>
         <select id="nl-proto" style="display:none">
           <option value="vless-ws">VLESS / WebSocket</option>
-          <option value="xhttp-packet-up">XHTTP Ultra · packet-up</option>
-          <option value="xhttp-stream-up">XHTTP Ultra · stream-up</option>
+          <option value="xhttp">XHTTP Ultra · mode: auto</option>
         </select>
-        <div class="proto-cards">
+        <div class="proto-cards" style="grid-template-columns:repeat(2,1fr)">
           <div class="proto-card active" data-val="vless-ws" onclick="selectProto('vless-ws',this)">
             <div class="proto-card-check"><i class="ti ti-check"></i></div>
             <div class="proto-card-icon"><i class="ti ti-link"></i></div>
             <div class="proto-card-title">VLESS / WS</div>
             <div class="proto-card-desc">پایدار و همه‌منظوره</div>
           </div>
-          <div class="proto-card" data-val="xhttp-packet-up" onclick="selectProto('xhttp-packet-up',this)">
+          <div class="proto-card" data-val="xhttp" onclick="selectProto('xhttp',this)">
             <div class="proto-card-check"><i class="ti ti-check"></i></div>
             <div class="proto-card-icon"><i class="ti ti-bolt"></i></div>
-            <div class="proto-card-title">XHTTP · packet-up</div>
-            <div class="proto-card-desc">سازگار با CDN</div>
-          </div>
-          <div class="proto-card" data-val="xhttp-stream-up" onclick="selectProto('xhttp-stream-up',this)">
-            <div class="proto-card-check"><i class="ti ti-check"></i></div>
-            <div class="proto-card-icon"><i class="ti ti-rocket"></i></div>
-            <div class="proto-card-title">XHTTP · stream-up</div>
-            <div class="proto-card-desc">تاخیر پایین‌تر</div>
+            <div class="proto-card-title">XHTTP · mode: auto</div>
+            <div class="proto-card-desc">انتخاب خودکار packet-up/stream-up</div>
           </div>
         </div>
       </div>
@@ -999,11 +944,7 @@ a{color:inherit;text-decoration:none}
           </div>
         </div>
       </div>
-      <div class="cp-row mb16">
-        <div class="cp-block">
-          <div class="cp-block-label"><i class="ti ti-route"></i> پورت اتصال</div>
-          <input class="cp-input-full" id="nl-port" type="number" min="1" max="65535" placeholder="443" value="443">
-        </div>
+      <div class="cp-row mb16" style="grid-template-columns:1fr">
         <div class="cp-block">
           <div class="cp-block-label"><i class="ti ti-users"></i> محدودیت آی‌پی / کاربر هم‌زمان</div>
           <input class="cp-input-full" id="nl-iplimit" type="number" min="0" step="1" placeholder="0 = نامحدود" value="0">
@@ -1041,44 +982,50 @@ a{color:inherit;text-decoration:none}
       </div>
     </div>
   </div>
-  <div class="cfg-grid" id="links-grid"></div>
-  <div class="empty" id="links-empty" style="display:none"><i class="ti ti-link-off"></i><p>هنوز کانفیگی وجود ندارد</p></div>
-</section>
-<section class="pg" id="pg-subgroups">
-  <div class="topbar">
-    <div><div class="tb-title"><i class="ti ti-folders"></i> گروه‌های ساب</div><div class="tb-sub">هر گروه یک صفحه پابلیک مجزا با کانفیگ‌های خودش دارد</div></div>
-    <div class="tb-right">
-      <span class="badge bg-purple" id="subs-pg-cnt">۰ گروه</span>
-      <button class="btn btn-pur" onclick="openModal('modal-create-sub')"><i class="ti ti-folder-plus"></i> گروه جدید</button>
-    </div>
-  </div>
-  <div class="subs-toolbar">
+  <div class="links-toolbar">
     <div class="subs-search">
       <i class="ti ti-search"></i>
-      <input type="text" id="subs-search-inp" placeholder="جستجو در گروه‌ها..." oninput="filterSubs(this.value)">
+      <input id="links-search" placeholder="جستجو بر اساس نام، یادداشت یا UUID..." oninput="renderLinksGrid()">
+    </div>
+    <select id="links-sort" class="fs" style="min-width:180px" onchange="renderLinksGrid()">
+      <option value="newest">مرتب‌سازی: جدیدترین</option>
+      <option value="name">نام (الفبا)</option>
+      <option value="usage_desc">بیشترین مصرف</option>
+      <option value="usage_asc">کمترین مصرف</option>
+      <option value="remaining_asc">کمترین حجم باقی‌مانده</option>
+      <option value="active_first">فعال‌ها اول</option>
+    </select>
+    <label class="bulk-selall">
+      <input type="checkbox" id="links-selall" onchange="toggleSelectAllLinks(this)">
+      <span>انتخاب همه</span>
+    </label>
+  </div>
+  <div class="bulk-bar" id="links-bulkbar" style="display:none">
+    <span class="bulk-count"><i class="ti ti-checkbox"></i> <span id="links-selcount">۰</span> کانفیگ انتخاب شده</span>
+    <div class="bulk-actions">
+      <button class="btn btn-sm btn-g" onclick="bulkLinksAction('activate')"><i class="ti ti-circle-check"></i> فعال‌سازی</button>
+      <button class="btn btn-sm btn-g" onclick="bulkLinksAction('deactivate')"><i class="ti ti-circle-x"></i> غیرفعال‌سازی</button>
+      <button class="btn btn-sm btn-g" onclick="bulkLinksAction('reset')"><i class="ti ti-rotate"></i> ریست مصرف</button>
+      <button class="btn btn-sm btn-d" onclick="bulkLinksAction('delete')"><i class="ti ti-trash"></i> حذف</button>
+      <button class="btn btn-sm btn-o" onclick="clearLinksSelection()"><i class="ti ti-x"></i> لغو انتخاب</button>
     </div>
   </div>
-  <div class="sub-grid" id="subs-grid">
-    <div class="subs-empty-v2"><div class="subs-empty-v2-icon"><i class="ti ti-folders"></i></div><div class="subs-empty-v2-title">هنوز گروهی وجود ندارد</div><div class="subs-empty-v2-sub">یک گروه جدید بسازید تا کانفیگ‌ها را دسته‌بندی کنید</div></div>
-  </div>
+  <div class="cfg-grid" id="links-grid"></div>
+  <div class="empty" id="links-empty" style="display:none"><i class="ti ti-link-off"></i><p>هنوز کانفیگی وجود ندارد</p></div>
+  <div class="empty" id="links-empty-search" style="display:none"><i class="ti ti-search-off"></i><p>موردی با این جستجو پیدا نشد</p></div>
 </section>
-<section class="pg" id="pg-subscriptions">
-  <div class="topbar"><div><div class="tb-title"><i class="ti ti-rss"></i> سابسکریپشن</div><div class="tb-sub">لینک‌های اشتراک برای اپ‌های v2ray</div></div></div>
-  <div class="g2">
-    <div class="card">
-      <div class="card-title"><i class="ti ti-rss"></i> سابسکریپشن تکی (هر کانفیگ)</div>
-      <p style="font-size:11.5px;color:var(--t3);line-height:1.8;margin-bottom:12px">هر کانفیگ URL سابسکریپشن مخصوص دارد. از کارت کانفیگ روی آیکون <i class="ti ti-rss"></i> کلیک کنید.</p>
-    </div>
-    <div class="card">
-      <div class="card-title"><i class="ti ti-database"></i> سابسکریپشن کامل (ادمین)</div>
-      <p style="font-size:11.5px;color:var(--t3);line-height:1.8;margin-bottom:4px">شامل تمام کانفیگ‌های فعال.</p>
-      <div class="sub-box"><span class="sub-url" id="sub-all-url">در حال دریافت...</span><div style="display:flex;gap:6px"><button class="btn btn-sm btn-g" onclick="cpSubAll()"><i class="ti ti-copy"></i></button><button class="btn btn-sm btn-g" onclick="window.open(location.protocol+'//'+location.host+'/sub-all')"><i class="ti ti-external-link"></i></button></div></div>
-      <div class="cl amber" style="margin-top:11px"><i class="ti ti-alert-triangle"></i><span>این آدرس فقط در مرورگری که به پنل وارد شده کار می‌کند (نیاز به کوکی سشن).</span></div>
-    </div>
+<section class="pg" id="pg-cfgdash">
+  <div class="topbar">
+    <div><div class="tb-title"><i class="ti ti-chart-infographic"></i> داشبورد کانفیگ‌ها</div><div class="tb-sub">آنالیز اختصاصی هر کانفیگ — وضعیت، مصرف و آی‌پی‌های متصل</div></div>
+    <div class="tb-right"><button class="btn btn-p btn-sm" onclick="loadCfgDash()"><i class="ti ti-refresh"></i> رفرش</button></div>
   </div>
-  <div class="card">
-    <div class="card-title"><i class="ti ti-folders"></i> لینک سابسکریپشن گروه‌ها</div>
-    <div id="sub-groups-list">در حال بارگذاری...</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title"><i class="ti ti-list"></i> انتخاب کانفیگ <span class="ml-auto badge bg-blue" id="cfgdash-count">۰</span></div>
+    <div class="cfgdash-grid" id="cfgdash-list"></div>
+    <div class="empty" id="cfgdash-empty" style="display:none"><i class="ti ti-link-off"></i><p>هنوز کانفیگی وجود ندارد</p></div>
+  </div>
+  <div id="cfgdash-detail">
+    <div class="card"><div class="empty"><i class="ti ti-hand-click"></i><p>یک کانفیگ را از لیست بالا انتخاب کنید تا آنالیز کامل آن نمایش داده شود</p></div></div>
   </div>
 </section>
 <section class="pg" id="pg-traffic">
@@ -1222,7 +1169,7 @@ a{color:inherit;text-decoration:none}
       </div>
       <div class="srv-tiles">
         <div class="srv-tile"><div class="srv-tile-icon"><i class="ti ti-route"></i></div><div class="srv-tile-text"><div class="srv-tile-label">پورت پیش‌فرض</div><div class="srv-tile-val">443 (TLS) · قابل تغییر در هر کانفیگ</div></div></div>
-        <div class="srv-tile"><div class="srv-tile-icon"><i class="ti ti-versions"></i></div><div class="srv-tile-text"><div class="srv-tile-label">نسخه</div><div class="srv-tile-val">v9.5</div></div></div>
+        <div class="srv-tile"><div class="srv-tile-icon"><i class="ti ti-versions"></i></div><div class="srv-tile-text"><div class="srv-tile-label">نسخه</div><div class="srv-tile-val">v9.8</div></div></div>
         <div class="srv-tile"><div class="srv-tile-icon"><i class="ti ti-brand-fastapi"></i></div><div class="srv-tile-text"><div class="srv-tile-label">فریم‌ورک</div><div class="srv-tile-val">FastAPI + Uvicorn</div></div></div>
         <div class="srv-tile"><div class="srv-tile-icon"><i class="ti ti-cloud"></i></div><div class="srv-tile-text"><div class="srv-tile-label">پلتفرم</div><div class="srv-tile-val">Railway</div></div></div>
         <div class="srv-tile" style="grid-column:1/-1"><div class="srv-tile-icon"><i class="ti ti-device-floppy"></i></div><div class="srv-tile-text"><div class="srv-tile-label">ذخیره‌سازی</div><div class="srv-tile-val">JSON File (/data)</div></div></div>
@@ -1281,17 +1228,13 @@ a{color:inherit;text-decoration:none}
         <div class="srv-tile-icon"><i class="ti ti-brand-youtube"></i></div>
         <div class="srv-tile-text"><div class="srv-tile-label">یوتیوب</div><div class="srv-tile-val">youtube.com/@X4GHUB</div></div>
       </a>
-      <a class="srv-tile" href="https://t.me/Farajian2004m" target="_blank" style="text-decoration:none;cursor:pointer">
-        <div class="srv-tile-icon"><i class="ti ti-brand-telegram"></i></div>
-        <div class="srv-tile-text"><div class="srv-tile-label">آیدی تلگرام</div><div class="srv-tile-val">@Farajian2004m</div></div>
-      </a>
       <a class="srv-tile" href="https://t.me/x4g_group" target="_blank" style="text-decoration:none;cursor:pointer">
         <div class="srv-tile-icon"><i class="ti ti-users-group"></i></div>
         <div class="srv-tile-text"><div class="srv-tile-label">گروه تلگرام</div><div class="srv-tile-val">t.me/x4g_group</div></div>
       </a>
-      <a class="srv-tile" href="https://t.me/vpnfreev2rayconfig" target="_blank" style="text-decoration:none;cursor:pointer">
+      <a class="srv-tile" href="https://t.me/X4GHUB" target="_blank" style="text-decoration:none;cursor:pointer">
         <div class="srv-tile-icon"><i class="ti ti-speakerphone"></i></div>
-        <div class="srv-tile-text"><div class="srv-tile-label">کانال تلگرام</div><div class="srv-tile-val">t.me/vpnfreev2rayconfig</div></div>
+        <div class="srv-tile-text"><div class="srv-tile-label">کانال تلگرام</div><div class="srv-tile-val">t.me/X4GHUB</div></div>
       </a>
       <a class="srv-tile" href="https://github.com/x4gKing" target="_blank" style="text-decoration:none;cursor:pointer">
         <div class="srv-tile-icon"><i class="ti ti-brand-github"></i></div>
@@ -1330,7 +1273,7 @@ function expChip(exp,expired){
   return `<span class="exp-chip ec-ok"><i class="ti ti-calendar-check"></i> ${toFa(d)} روز مانده</span>`;
 }
 function protoBadge(p){
-  const m={'vless-ws':['VLESS · WS','pc-ws'],'xhttp-packet-up':['XHTTP · packet-up','pc-xhttp'],'xhttp-stream-up':['XHTTP · stream-up','pc-xhttp'],'xhttp-stream-one':['XHTTP ULTRA','pc-ultra']};
+  const m={'vless-ws':['VLESS · WS','pc-ws'],'xhttp':['XHTTP · auto','pc-xhttp']};
   const v=m[p]||m['vless-ws'];
   return `<span class="proto-chip ${v[1]}">${v[0]}</span>`;
 }
@@ -1384,7 +1327,7 @@ overlay.addEventListener('click',closeSb);
 function navTo(name){
   document.querySelectorAll('.nav-it').forEach(n=>n.classList.toggle('on',n.dataset.pg===name));
   document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('on',p.id==='pg-'+name));
-  const loaders={links:loadLinks,connections:loadConns,errors:loadErrs,subscriptions:loadSubsPage,subgroups:loadSubs,logs:loadActivity};
+  const loaders={links:loadLinks,connections:loadConns,errors:loadErrs,logs:loadActivity,cfgdash:loadCfgDash};
   if(loaders[name])loaders[name]();
   closeSb();window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -1400,7 +1343,7 @@ async function fetchStats(){
     document.getElementById('m-traffic').innerHTML=d.total_traffic_mb.toFixed(1)+'<span class="m-unit">MB</span>';
     document.getElementById('m-alinks').textContent=d.active_links??'—';
     document.getElementById('m-lsub').textContent='از '+d.links_count+' کانفیگ';
-    document.getElementById('m-subs').textContent=d.subs_count??'—';
+    document.getElementById('m-errs').textContent=d.total_errors??'—';
     document.getElementById('errs-badge').textContent=d.total_errors+' خطا';
     document.getElementById('uptime-inline').textContent=d.uptime;
     document.getElementById('uptime-badge').textContent='Railway · '+d.uptime;
@@ -1444,30 +1387,63 @@ async function loadActivity(){
     `).join('');
   }catch(e){console.error(e)}
 }
-let allSubsList=[],allLinksList=[];
+let allLinksList=[];
+let selectedLinks=new Set();
 async function loadLinks(){
   try{
-    const [lr,sr]=await Promise.all([authF('/api/links'),authF('/api/subs')]);
-    const {links=[]}=await lr.json();
-    const {subs=[]}=await sr.json();
-    allSubsList=subs;allLinksList=links;
-    const nlSub=document.getElementById('nl-sub');
-    nlSub.innerHTML='<option value="">— بدون گروه —</option>'+subs.map(s=>`<option value="${esc(s.sub_id)}">${esc(s.name)}</option>`).join('');
+    const r=await authF('/api/links');
+    const {links=[]}=await r.json();
+    allLinksList=links;
+    const validUuids=new Set(links.map(l=>l.uuid));
+    selectedLinks.forEach(u=>{if(!validUuids.has(u))selectedLinks.delete(u)});
     document.getElementById('links-nb').textContent=links.length;
     document.getElementById('links-pg-cnt').textContent=toFa(links.length)+' کانفیگ';
     document.getElementById('lsummary-badge').textContent=toFa(links.length);
-    const grid=document.getElementById('links-grid'),empty=document.getElementById('links-empty');
-    if(!links.length){grid.innerHTML='';empty.style.display='block';document.getElementById('lsummary').innerHTML='<div class="empty"><i class="ti ti-link-off"></i><p>کانفیگی وجود ندارد</p></div>';return}
-    empty.style.display='none';
-    const subMap=Object.fromEntries(subs.map(s=>[s.sub_id,s.name]));
-    grid.innerHTML=links.map(l=>{
+    document.getElementById('lsummary').innerHTML=links.length?links.slice(0,6).map(l=>`<div class="sr"><span class="sr-k" style="gap:5px"><i class="ti ${l.expired?'ti-calendar-x':l.active?'ti-circle-check':'ti-circle-x'}" style="color:${l.expired?'var(--amber)':l.active?'var(--green)':'var(--red)'}"></i>${esc(l.label)}</span><span class="sr-v" style="font-size:10px">${fmtB(l.used_bytes)} / ${l.limit_bytes===0?'∞':fmtB(l.limit_bytes)}</span></div>`).join(''):'<div class="empty"><i class="ti ti-link-off"></i><p>کانفیگی وجود ندارد</p></div>';
+    renderLinksGrid();
+  }catch(e){console.error(e)}
+}
+function filteredLinksList(){
+  const q=(document.getElementById('links-search')?.value||'').trim().toLowerCase();
+  let list=!q?allLinksList:allLinksList.filter(l=>
+    (l.label||'').toLowerCase().includes(q) ||
+    (l.note||'').toLowerCase().includes(q) ||
+    (l.uuid||'').toLowerCase().includes(q)
+  );
+  const sortBy=document.getElementById('links-sort')?.value||'newest';
+  const remaining=l=>l.limit_bytes===0?Infinity:Math.max(0,l.limit_bytes-l.used_bytes);
+  list=list.slice();
+  if(sortBy==='name'){
+    list.sort((a,b)=>(a.label||'').localeCompare(b.label||'','fa'));
+  }else if(sortBy==='usage_desc'){
+    list.sort((a,b)=>(b.used_bytes||0)-(a.used_bytes||0));
+  }else if(sortBy==='usage_asc'){
+    list.sort((a,b)=>(a.used_bytes||0)-(b.used_bytes||0));
+  }else if(sortBy==='remaining_asc'){
+    list.sort((a,b)=>remaining(a)-remaining(b));
+  }else if(sortBy==='active_first'){
+    list.sort((a,b)=>((b.active&&!b.expired)?1:0)-((a.active&&!a.expired)?1:0));
+  }else{
+    list.sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  }
+  return list;
+}
+function renderLinksGrid(){
+  const links=filteredLinksList();
+  const grid=document.getElementById('links-grid'),empty=document.getElementById('links-empty'),emptySearch=document.getElementById('links-empty-search');
+  if(!allLinksList.length){grid.innerHTML='';empty.style.display='block';emptySearch.style.display='none';updateBulkBar();return}
+  if(!links.length){grid.innerHTML='';empty.style.display='none';emptySearch.style.display='block';updateBulkBar();return}
+  empty.style.display='none';emptySearch.style.display='none';
+  grid.innerHTML=links.map(l=>{
   const lim=l.limit_bytes===0?'∞':fmtB(l.limit_bytes);
   const pct=l.limit_bytes===0?0:Math.min(100,l.used_bytes/l.limit_bytes*100);
   const bc=pct>90?'var(--red)':pct>70?'var(--amber)':'var(--accent)';
   const allowed=l.active&&!l.expired;
   const cardCls=!l.active?'is-off':(l.expired?'is-exp':'');
+  const checked=selectedLinks.has(l.uuid)?'checked':'';
   return `<div class="cfg-card ${cardCls}">
     <div class="cfg-row">
+      <span class="cfg-select"><input type="checkbox" ${checked} onchange="toggleLinkSelect('${l.uuid}',this)" title="انتخاب"></span>
       <span class="cfg-status-dot ${allowed?'pulse':''}"></span>
       <div class="cfg-identity">
         <div class="cfg-label">${esc(l.label)}</div>
@@ -1490,14 +1466,14 @@ async function loadLinks(){
         <span class="cfg-sub-tag" title="Fingerprint"><i class="ti ti-fingerprint"></i> ${esc(l.fingerprint||'chrome')}</span>
         <span class="cfg-sub-tag" title="آی‌پی‌های متصل / محدودیت"><i class="ti ti-users"></i> ${l.connected_ips||0}${l.ip_limit?('/'+l.ip_limit):' (∞)'}</span>
         <span class="cfg-sub-tag" title="محدودیت سرعت"><i class="ti ti-gauge"></i> ${l.speed_limit_bytes?((l.speed_limit_bytes*8/1024/1024).toFixed(1)+' Mbps'):'نامحدود'}</span>
-        ${l.sub_id&&allSubsList.find(s=>s.sub_id===l.sub_id)?`<span class="cfg-sub-tag"><i class="ti ti-folder"></i> ${esc(allSubsList.find(s=>s.sub_id===l.sub_id).name)}</span>`:''}
       </div>
       <div class="cfg-divider-v"></div>
       <div class="cfg-actions">
         <button class="tog${allowed?' on':''}" onclick="toggleActive('${l.uuid}',${!l.active})" title="فعال/غیرفعال"></button>
         <button class="btn btn-sm btn-g btn-icon" onclick="navigator.clipboard.writeText('${esc(l.vless_link)}').then(()=>toast('لینک کپی شد','ok'))" title="کپی لینک"><i class="ti ti-copy"></i></button>
-        <button class="btn btn-sm btn-g btn-icon" onclick="navigator.clipboard.writeText('${esc(l.sub_url)}').then(()=>toast('Sub کپی شد','ok'))" title="Sub URL"><i class="ti ti-rss"></i></button>
+        <button class="btn btn-sm btn-g btn-icon" onclick="window.open('${esc(l.sub_url)}','_blank')" title="باز کردن داشبورد ساب"><i class="ti ti-rss"></i></button>
         <button class="btn btn-sm btn-g btn-icon" onclick="showQR('${esc(l.vless_link)}')" title="QR"><i class="ti ti-qrcode"></i></button>
+        <button class="btn btn-sm btn-g btn-icon" onclick="openLinkChart('${l.uuid}','${esc(l.label)}')" title="نمودار مصرف ۳۰ روز اخیر"><i class="ti ti-chart-line"></i></button>
         <button class="btn btn-sm btn-amber btn-icon" onclick="openEditLink('${l.uuid}')" title="ویرایش"><i class="ti ti-edit"></i></button>
         <button class="btn btn-sm btn-g btn-icon" onclick="resetUsage('${l.uuid}')" title="ریست مصرف"><i class="ti ti-rotate"></i></button>
         <button class="btn btn-sm btn-d btn-icon" onclick="deleteLink('${l.uuid}')" title="حذف"><i class="ti ti-trash"></i></button>
@@ -1505,8 +1481,58 @@ async function loadLinks(){
     </div>
   </div>`;
 }).join('');
-    document.getElementById('lsummary').innerHTML=links.slice(0,6).map(l=>`<div class="sr"><span class="sr-k" style="gap:5px"><i class="ti ${l.expired?'ti-calendar-x':l.active?'ti-circle-check':'ti-circle-x'}" style="color:${l.expired?'var(--amber)':l.active?'var(--green)':'var(--red)'}"></i>${esc(l.label)}</span><span class="sr-v" style="font-size:10px">${fmtB(l.used_bytes)} / ${l.limit_bytes===0?'∞':fmtB(l.limit_bytes)}</span></div>`).join('');
-  }catch(e){console.error(e)}
+  updateBulkBar();
+}
+function toggleLinkSelect(uuid,el){
+  if(el.checked)selectedLinks.add(uuid);else selectedLinks.delete(uuid);
+  updateBulkBar();
+}
+function toggleSelectAllLinks(el){
+  const list=filteredLinksList();
+  if(el.checked)list.forEach(l=>selectedLinks.add(l.uuid));
+  else list.forEach(l=>selectedLinks.delete(l.uuid));
+  renderLinksGrid();
+}
+function clearLinksSelection(){selectedLinks.clear();renderLinksGrid();}
+function updateBulkBar(){
+  const bar=document.getElementById('links-bulkbar');
+  const selall=document.getElementById('links-selall');
+  const n=selectedLinks.size;
+  document.getElementById('links-selcount').textContent=toFa(n);
+  bar.style.display=n>0?'flex':'none';
+  const list=filteredLinksList();
+  selall.checked=list.length>0&&list.every(l=>selectedLinks.has(l.uuid));
+}
+async function bulkLinksAction(action){
+  const uuids=Array.from(selectedLinks);
+  if(!uuids.length)return;
+  if(action==='delete'&&!confirm(`حذف ${toFa(uuids.length)} کانفیگ انتخاب‌شده؟ این عمل غیرقابل بازگشت است.`))return;
+  try{
+    await Promise.all(uuids.map(uuid=>{
+      if(action==='activate')return authF('/api/links/'+uuid,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:true})});
+      if(action==='deactivate')return authF('/api/links/'+uuid,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:false})});
+      if(action==='reset')return authF('/api/links/'+uuid,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({reset_usage:true})});
+      if(action==='delete')return authF('/api/links/'+uuid,{method:'DELETE'});
+    }));
+    const msg={activate:'کانفیگ‌های انتخاب‌شده فعال شدند ✓',deactivate:'کانفیگ‌های انتخاب‌شده غیرفعال شدند ✓',reset:'مصرف کانفیگ‌های انتخاب‌شده ریست شد ✓',delete:'کانفیگ‌های انتخاب‌شده حذف شدند ✓'}[action];
+    toast(msg,'ok');
+    if(action==='delete')selectedLinks.clear();
+    loadLinks();
+  }catch(e){toast('خطا در اجرای عملیات گروهی','err')}
+}
+let linkChart=null;
+async function openLinkChart(uuid,label){
+  document.getElementById('lc-title').textContent='نمودار مصرف ۳۰ روز اخیر — '+label;
+  openModal('modal-link-chart');
+  try{
+    const r=await authF('/api/links/'+uuid+'/history'),d=await r.json();
+    const labels=d.days.map(x=>x.date.slice(5));
+    const vals=d.days.map(x=>+(x.bytes/1024**2).toFixed(2));
+    const ctx=document.getElementById('lc-canvas');
+    if(linkChart)linkChart.destroy();
+    linkChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'مصرف (MB)',data:vals,backgroundColor:'rgba(139,92,246,.55)',borderRadius:5,maxBarThickness:22}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
+  }catch(e){toast('خطا در دریافت تاریخچه مصرف','err')}
 }
 async function createLink(){
   const label=document.getElementById('nl-label').value.trim()||'کانفیگ جدید';
@@ -1514,19 +1540,17 @@ async function createLink(){
   const unit=document.getElementById('nl-unit').value;
   const exp=document.getElementById('nl-exp').value;
   const note=document.getElementById('nl-note').value.trim();
-  const sub_id=document.getElementById('nl-sub').value||null;
   const protocol=document.getElementById('nl-proto').value||'vless-ws';
   const fingerprint=document.getElementById('nl-fp').value||'chrome';
   const alpn=document.getElementById('nl-alpn').value.trim();
-  const port=Number(document.getElementById('nl-port').value)||443;
+  const port=443;
   const ip_limit=Number(document.getElementById('nl-iplimit').value)||0;
   const speed_limit_value=Number(document.getElementById('nl-speed').value)||0;
   const speed_limit_unit=document.getElementById('nl-speed-unit').value;
   try{
-    const r=await authF('/api/links',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label,limit_value:val||0,limit_unit:unit,expires_days:exp||0,note,sub_id,protocol,fingerprint,alpn,port,ip_limit,speed_limit_value,speed_limit_unit})});
+    const r=await authF('/api/links',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({label,limit_value:val||0,limit_unit:unit,expires_days:exp||0,note,protocol,fingerprint,alpn,port,ip_limit,speed_limit_value,speed_limit_unit})});
     if(!r.ok)throw new Error('failed');
     ['nl-label','nl-val','nl-exp','nl-note','nl-alpn'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('nl-port').value='443';
     document.getElementById('nl-iplimit').value='0';
     document.getElementById('nl-speed').value='0';
     document.getElementById('nl-alpn-preset').value='';
@@ -1584,169 +1608,6 @@ async function deleteLink(uuid){
   try{const r=await authF('/api/links/'+uuid,{method:'DELETE'});if(!r.ok)throw new Error();toast('حذف شد ✓','ok');loadLinks();}catch(e){toast('خطا','err')}
 }
 function showQR(link){window.open('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data='+encodeURIComponent(link),'_blank')}
-let allSubsRaw=[];
-async function loadSubs(){
-  try{
-    const r=await authF('/api/subs'),d=await r.json();
-    const subs=d.subs||[];
-    allSubsRaw=subs;
-    document.getElementById('subs-nb').textContent=subs.length;
-    document.getElementById('subs-pg-cnt').textContent=toFa(subs.length)+' گروه';
-    renderSubsGrid(subs);
-  }catch(e){console.error(e)}
-}
-function renderSubsGrid(subs){
-  const grid=document.getElementById('subs-grid');
-  if(!subs.length){
-    grid.innerHTML='<div class="subs-empty-v2"><div class="subs-empty-v2-icon"><i class="ti ti-folders"></i></div><div class="subs-empty-v2-title">هنوز گروهی وجود ندارد</div><div class="subs-empty-v2-sub">یک گروه جدید بسازید تا کانفیگ‌ها را دسته‌بندی کنید</div></div>';
-    return;
-  }
-  grid.innerHTML=subs.map(s=>`
-    <div class="sub-card">
-      <div class="sub-card-top">
-        <div class="sub-card-head-v2">
-          <div class="sub-card-icon"><i class="ti ti-folder"></i></div>
-          <div class="sub-card-titles">
-            <div class="sub-card-name-v2">${esc(s.name)}</div>
-            ${s.desc?`<div class="sub-card-desc-v2">${esc(s.desc)}</div>`:'<div class="sub-card-desc-v2" style="opacity:.5">بدون توضیحات</div>'}
-          </div>
-          <div class="sub-card-lock-badge ${s.has_password?'locked':'open'}" title="${s.has_password?'رمزدار':'پابلیک'}">
-            <i class="ti ${s.has_password?'ti-lock':'ti-lock-open'}"></i>
-          </div>
-        </div>
-        <div class="sub-card-stats">
-          <div class="sub-card-stat"><div class="sub-card-stat-val">${toFa(s.links_count)}</div><div class="sub-card-stat-label">کانفیگ</div></div>
-          <div class="sub-card-stat"><div class="sub-card-stat-val" style="color:var(--green-t)">${toFa(s.active_count)}</div><div class="sub-card-stat-label">فعال</div></div>
-          <div class="sub-card-stat"><div class="sub-card-stat-val" style="font-size:12px">${esc(s.total_used_fmt)}</div><div class="sub-card-stat-label">مصرف</div></div>
-        </div>
-      </div>
-      <div class="sub-card-url-row">
-        <span class="sub-card-url-text">${esc(s.public_url)}</span>
-        <button class="sub-card-url-copy" onclick="navigator.clipboard.writeText('${esc(s.public_url)}').then(()=>toast('لینک پابلیک کپی شد','ok'))" title="کپی"><i class="ti ti-copy"></i></button>
-        <button class="sub-card-url-copy" onclick="window.open('${esc(s.public_url)}','_blank')" title="باز کردن"><i class="ti ti-external-link"></i></button>
-      </div>
-      <div class="sub-card-bottom">
-        <button class="btn btn-sm btn-g" onclick="openSubLinks('${esc(s.sub_id)}','${esc(s.name)}')"><i class="ti ti-link-plus"></i> کانفیگ‌ها</button>
-        <button class="btn btn-sm btn-o" onclick="navigator.clipboard.writeText('${esc(s.sub_url)}').then(()=>toast('لینک ساب کپی شد','ok'))"><i class="ti ti-rss"></i> ساب</button>
-        <button class="btn btn-sm btn-g btn-icon" onclick="showQR('${esc(s.sub_url)}')" title="QR"><i class="ti ti-qrcode"></i></button>
-        <button class="btn btn-sm btn-d btn-icon" onclick="deleteSub('${esc(s.sub_id)}')" title="حذف"><i class="ti ti-trash"></i></button>
-      </div>
-    </div>
-  `).join('');
-}
-function filterSubs(q){
-  q=q.trim().toLowerCase();
-  if(!q){renderSubsGrid(allSubsRaw);return}
-  renderSubsGrid(allSubsRaw.filter(s=>s.name.toLowerCase().includes(q)||(s.desc||'').toLowerCase().includes(q)));
-}
-async function createSub(){
-  const name=document.getElementById('ns-name').value.trim()||'گروه جدید';
-  const desc=document.getElementById('ns-desc').value.trim();
-  const pw=document.getElementById('ns-pw').value;
-  try{
-    const r=await authF('/api/subs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,desc,password:pw})});
-    if(!r.ok)throw new Error('failed');
-    ['ns-name','ns-desc','ns-pw'].forEach(id=>document.getElementById(id).value='');
-    closeModal('modal-create-sub');
-    toast('گروه ساخته شد ✓','ok');loadSubs();
-  }catch(e){toast('خطا در ساخت گروه','err')}
-}
-async function deleteSub(sub_id){
-  if(!confirm('حذف این گروه؟ کانفیگ‌ها حذف نمی‌شوند.'))return;
-  try{const r=await authF('/api/subs/'+sub_id,{method:'DELETE'});if(!r.ok)throw new Error();toast('گروه حذف شد ✓','ok');loadSubs();loadLinks();}catch(e){toast('خطا','err')}
-}
-let lmodalLinks=[],lmodalInSub=new Set();
-async function openSubLinks(sub_id,name){
-  currentSubId=sub_id;
-  document.getElementById('modal-sub-name').textContent=name;
-  document.getElementById('modal-links-body').innerHTML='<div style="color:var(--t3);font-size:12px;padding:20px;text-align:center"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite;font-size:20px"></i></div>';
-  document.getElementById('lmodal-search-inp').value='';
-  openModal('modal-links');
-  try{
-    const [lr,sr]=await Promise.all([authF('/api/links'),authF('/api/subs')]);
-    const {links=[]}=await lr.json();
-    const {subs=[]}=await sr.json();
-    const thisSub=subs.find(s=>s.sub_id===sub_id);
-    lmodalInSub=new Set(thisSub?.link_ids||[]);
-    lmodalLinks=links;
-    renderLmodalList(links);
-  }catch(e){toast('خطا در بارگذاری','err')}
-}
-function renderLmodalList(links){
-  const body=document.getElementById('modal-links-body');
-  if(!links.length){body.innerHTML='<div class="empty" style="padding:30px"><i class="ti ti-link-off"></i><p>هنوز کانفیگی وجود ندارد</p></div>';updateLmodalCount();return}
-  body.innerHTML=links.map(l=>{
-    const checked=lmodalInSub.has(l.uuid);
-    const on=l.active&&!l.expired;
-    return `<div class="lrow-v2 ${checked?'checked':''}" data-uuid="${l.uuid}" data-name="${esc(l.label).toLowerCase()}" onclick="toggleLrow('${l.uuid}',this)">
-      <div class="lrow-v2-check"><i class="ti ti-check"></i></div>
-      <div class="lrow-v2-avatar"><i class="ti ti-key"></i></div>
-      <div class="lrow-v2-info">
-        <div class="lrow-v2-name">${esc(l.label)}</div>
-        <div class="lrow-v2-meta"><i class="ti ti-database" style="font-size:10px"></i> ${fmtB(l.used_bytes)}</div>
-      </div>
-      <span class="lrow-v2-status ${on?'on':'off'}">${on?'فعال':'غیرفعال'}</span>
-    </div>`;
-  }).join('');
-  updateLmodalCount();
-}
-function toggleLrow(uuid,el){
-  if(lmodalInSub.has(uuid)){lmodalInSub.delete(uuid);el.classList.remove('checked')}
-  else{lmodalInSub.add(uuid);el.classList.add('checked')}
-  updateLmodalCount();
-}
-function lmodalSelectAll(state){
-  lmodalLinks.forEach(l=>{if(state)lmodalInSub.add(l.uuid);else lmodalInSub.delete(l.uuid)});
-  renderLmodalList(lmodalLinks);
-}
-function updateLmodalCount(){
-  const el=document.getElementById('lmodal-count');
-  if(el)el.textContent=toFa(lmodalInSub.size)+' انتخاب شده';
-}
-function filterLmodal(q){
-  q=q.trim().toLowerCase();
-  document.querySelectorAll('#modal-links-body .lrow-v2').forEach(row=>{
-    row.style.display = !q || row.dataset.name.includes(q) ? '' : 'none';
-  });
-}
-async function saveSubLinks(){
-  if(!currentSubId)return;
-  const link_ids=[...lmodalInSub];
-  try{
-    const r=await authF('/api/subs/'+currentSubId,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({link_ids})});
-    if(!r.ok)throw new Error();
-    await Promise.all(lmodalLinks.map(l=>
-      authF('/api/links/'+l.uuid,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sub_id:lmodalInSub.has(l.uuid)?currentSubId:null})})
-    ));
-    closeModal('modal-links');
-    toast('کانفیگ‌های گروه ذخیره شدند ✓','ok');
-    loadSubs();loadLinks();
-  }catch(e){toast('خطا در ذخیره','err')}
-}
-async function loadSubsPage(){
-  document.getElementById('sub-all-url').textContent=location.protocol+'//'+location.host+'/sub-all';
-  try{
-    const r=await authF('/api/subs'),d=await r.json();
-    const subs=d.subs||[];
-    const el=document.getElementById('sub-groups-list');
-    if(!subs.length){el.innerHTML='<div class="empty"><i class="ti ti-rss-off"></i><p>هنوز گروهی ندارید</p></div>';return}
-    el.innerHTML=subs.map(s=>`
-      <div style="padding:13px 15px;background:var(--accent-d);border:1px solid var(--card-b);border-radius:10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <div>
-          <div style="font-weight:700;font-size:13px;margin-bottom:3px">${esc(s.name)}</div>
-          <div style="font-family:ui-monospace,monospace;font-size:10px;color:#A78BFA">${esc(s.sub_url)}</div>
-          <div style="font-size:10px;color:var(--t3);margin-top:3px">${toFa(s.links_count)} کانفیگ · ${esc(s.total_used_fmt)} مصرف ${s.has_password?'· 🔒 رمزدار':''}</div>
-        </div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap">
-          <button class="btn btn-sm btn-pur" onclick="navigator.clipboard.writeText('${esc(s.sub_url)}').then(()=>toast('کپی شد','ok'))"><i class="ti ti-copy"></i> ساب</button>
-          <button class="btn btn-sm btn-pur" onclick="navigator.clipboard.writeText('${esc(s.public_url)}').then(()=>toast('کپی شد','ok'))"><i class="ti ti-globe"></i> پابلیک</button>
-          <button class="btn btn-sm btn-g" onclick="showQR('${esc(s.sub_url)}')"><i class="ti ti-qrcode"></i></button>
-        </div>
-      </div>
-    `).join('');
-  }catch(e){}
-}
-function cpSubAll(){navigator.clipboard.writeText(location.protocol+'//'+location.host+'/sub-all').then(()=>toast('کپی شد ✓','ok'))}
 function parseBytesFmt(s){
   if(!s)return 0;
   const m=String(s).match(/([\d.]+)\s*([A-Za-z]+)/);
@@ -1755,14 +1616,75 @@ function parseBytesFmt(s){
   const mult={B:1,KB:1024,MB:1024**2,GB:1024**3,TB:1024**4};
   return n*(mult[u]||1);
 }
+let connsExpanded=new Set();
+function toggleConnCard(uuid){
+  if(connsExpanded.has(uuid))connsExpanded.delete(uuid);else connsExpanded.add(uuid);
+  renderConnsGrid(window.__lastConfigs||[]);
+}
+function renderConnsGrid(configs){
+  const grid=document.getElementById('conns-grid');
+  grid.innerHTML=configs.map(cfg=>{
+    const open=connsExpanded.has(cfg.uuid);
+    const ipsHtml=(cfg.connections||[]).map(c=>{
+      const secs=c.connected_at?Math.max(0,Math.floor((Date.now()-new Date(c.connected_at).getTime())/1000)):0;
+      const dur=secs<60?secs+' ثانیه':secs<3600?Math.floor(secs/60)+' دقیقه':Math.floor(secs/3600)+' ساعت';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:10px;background:var(--accent-d);border:1px solid var(--card-b);margin-top:7px">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          <i class="ti ti-device-desktop" style="color:var(--t3)"></i>
+          <span style="font-family:ui-monospace,monospace;font-size:12px;color:var(--t1)">${esc(c.ip)}</span>
+          <button class="conn-ip-copy" onclick="navigator.clipboard.writeText('${esc(c.ip)}').then(()=>toast('IP کپی شد','ok'))" title="کپی IP"><i class="ti ti-copy"></i></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:10.5px;color:var(--t3);flex-shrink:0">
+          <span><i class="ti ti-repeat" style="font-size:10px"></i> ${toFa(c.sessions)} سشن</span>
+          <span><i class="ti ti-transfer" style="font-size:10px"></i> ${esc(c.bytes_fmt)}</span>
+          <span><i class="ti ti-clock" style="font-size:10px"></i> ${dur}</span>
+        </div>
+      </div>`;
+    }).join('') || '<div style="padding:10px;color:var(--t3);font-size:11px">اتصالی نیست</div>';
+    return `<div class="conn-card-v2" style="cursor:pointer" onclick="toggleConnCard('${cfg.uuid}')">
+      <div class="conn-card-v2-glow"></div>
+      <div class="conn-card-v2-top">
+        <div class="conn-avatar"><i class="ti ti-key"></i></div>
+        <div class="conn-card-v2-id">
+          <div class="conn-ip-v2">${esc(cfg.label)}</div>
+          <div class="conn-label-v2">${toFa(cfg.ip_count)} آی‌پی · ${toFa(cfg.sessions)} سشن</div>
+        </div>
+        <span class="conn-status-pill"><span class="dot dg pulse"></span> زنده</span>
+      </div>
+      <div class="conn-card-v2-divider"></div>
+      <div class="conn-card-v2-body">
+        <div class="conn-proto-row">${protoBadge(cfg.protocol)}</div>
+        <div class="conn-stat-row">
+          <div class="conn-stat-box">
+            <div class="conn-stat-icon"><i class="ti ti-transfer"></i></div>
+            <div>
+              <div class="conn-stat-text-label">ترافیک</div>
+              <div class="conn-stat-text-val">${esc(cfg.bytes_fmt)}</div>
+            </div>
+          </div>
+          <div class="conn-stat-box">
+            <div class="conn-stat-icon time"><i class="ti ti-users"></i></div>
+            <div>
+              <div class="conn-stat-text-label">آی‌پی‌های متصل</div>
+              <div class="conn-stat-text-val">${toFa(cfg.ip_count)}</div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:10.5px;color:var(--accent2);margin-top:8px"><i class="ti ti-chevron-${open?'up':'down'}"></i> ${open?'بستن':'نمایش اتصالات'}</div>
+        ${open?`<div onclick="event.stopPropagation()">${ipsHtml}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
 async function loadConns(){
   try{
     const r=await authF('/api/connections'),d=await r.json();
     const grid=document.getElementById('conns-grid'),ce=document.getElementById('conns-empty');
-    document.getElementById('conns-live').innerHTML='<span class="dot dg pulse"></span> '+d.count+' اتصال';
-    document.getElementById('ch-count').textContent=toFa(d.count);
-    const conns=d.connections||[];
-    if(!d.count){
+    document.getElementById('conns-live').innerHTML='<span class="dot dg pulse"></span> '+d.raw_count+' اتصال';
+    document.getElementById('ch-count').textContent=toFa(d.raw_count);
+    const configs=d.configs||[];
+    window.__lastConfigs=configs;
+    if(!configs.length){
       grid.innerHTML='';ce.style.display='block';
       document.getElementById('ch-traffic').textContent='—';
       document.getElementById('ch-avgdur').textContent='—';
@@ -1770,63 +1692,96 @@ async function loadConns(){
       return;
     }
     ce.style.display='none';
-    const totalBytes=conns.reduce((s,c)=>s+parseBytesFmt(c.bytes_fmt),0);
+    const totalBytes=configs.reduce((s,c)=>s+(c.bytes||0),0);
     document.getElementById('ch-traffic').textContent=fmtB(totalBytes);
-    const uniqIps=new Set(conns.map(c=>c.ip)).size;
+    const uniqIps=configs.reduce((s,c)=>s+c.ip_count,0);
     document.getElementById('ch-uniq').textContent=toFa(uniqIps);
-    const durs=conns.map(c=>c.connected_at?Math.max(0,Math.floor((Date.now()-new Date(c.connected_at).getTime())/1000)):0);
-    const avgSec=durs.length?Math.floor(durs.reduce((a,b)=>a+b,0)/durs.length):0;
+    const allDurs=[];
+    configs.forEach(c=>(c.connections||[]).forEach(ip=>allDurs.push(ip.connected_at?Math.max(0,Math.floor((Date.now()-new Date(ip.connected_at).getTime())/1000)):0)));
+    const avgSec=allDurs.length?Math.floor(allDurs.reduce((a,b)=>a+b,0)/allDurs.length):0;
     document.getElementById('ch-avgdur').textContent=avgSec<60?avgSec+' ث':avgSec<3600?Math.floor(avgSec/60)+' د':Math.floor(avgSec/3600)+' س';
-    const maxDur=Math.max(...durs,1);
-    grid.innerHTML=conns.map(c=>{
-      const secs=c.connected_at?Math.max(0,Math.floor((Date.now()-new Date(c.connected_at).getTime())/1000)):0;
-      const dur=secs<60?secs+' ثانیه':secs<3600?Math.floor(secs/60)+' دقیقه':Math.floor(secs/3600)+' ساعت';
-      const durPct=Math.min(100,Math.round((secs/maxDur)*100));
-      const protoVal=c.transport==='vless-ws'?'vless-ws':(c.transport||'').replace('xhttp-','xhttp-');
-      return `<div class="conn-card-v2">
-        <div class="conn-card-v2-glow"></div>
-        <div class="conn-card-v2-top">
-          <div class="conn-avatar"><i class="ti ti-device-desktop"></i></div>
-          <div class="conn-card-v2-id">
-            <div class="conn-ip-v2">${esc(c.ip)}
-              <button class="conn-ip-copy" onclick="navigator.clipboard.writeText('${esc(c.ip)}').then(()=>toast('IP کپی شد','ok'))" title="کپی IP"><i class="ti ti-copy"></i></button>
-            </div>
-            <div class="conn-label-v2">${esc(c.label)}</div>
-          </div>
-          <span class="conn-status-pill"><span class="dot dg pulse"></span> زنده</span>
-        </div>
-        <div class="conn-card-v2-divider"></div>
-        <div class="conn-card-v2-body">
-          <div class="conn-proto-row">${protoBadge(protoVal)}</div>
-          <div class="conn-stat-row">
-            <div class="conn-stat-box">
-              <div class="conn-stat-icon"><i class="ti ti-transfer"></i></div>
-              <div>
-                <div class="conn-stat-text-label">ترافیک</div>
-                <div class="conn-stat-text-val">${esc(c.bytes_fmt)}</div>
-              </div>
-            </div>
-            <div class="conn-stat-box">
-              <div class="conn-stat-icon time"><i class="ti ti-clock"></i></div>
-              <div>
-                <div class="conn-stat-text-label">مدت اتصال</div>
-                <div class="conn-stat-text-val">${dur}</div>
-              </div>
-            </div>
-          </div>
-          <div class="conn-duration-track"><div class="conn-duration-fill" style="width:${durPct}%"></div></div>
-        </div>
-      </div>`;
-    }).join('');
+    renderConnsGrid(configs);
   }catch(e){console.error(e)}
 }
-async function loadErrs(){try{const r=await authF('/stats'),d=await r.json();renderErrs(d.recent_errors||[]);}catch(e){}}
-async function fetchDefaultVless(){
-  try{const r=await authF('/api/links'),d=await r.json();const links=d.links||[];const def=links.find(l=>l.limit_bytes===0&&l.active&&!l.expired)||links.find(l=>l.active&&!l.expired)||links[0];document.getElementById('vless-main').textContent=def?def.vless_link:'هنوز کانفیگی وجود ندارد';}catch(e){}
+
+// ── داشبورد کانفیگ‌ها: از داده‌ی همون /api/links و /api/connections استفاده می‌کنه ──
+let cfgDashSelected=null;
+async function loadCfgDash(){
+  try{
+    if(!allLinksList.length)await loadLinks();
+    await loadConns();
+    renderCfgDashList();
+    if(cfgDashSelected&&allLinksList.some(l=>l.uuid===cfgDashSelected))renderCfgDashDetail(cfgDashSelected);
+  }catch(e){console.error(e)}
 }
+function renderCfgDashList(){
+  const wrap=document.getElementById('cfgdash-list'),empty=document.getElementById('cfgdash-empty');
+  document.getElementById('cfgdash-count').textContent=toFa(allLinksList.length);
+  if(!allLinksList.length){wrap.innerHTML='';empty.style.display='block';return}
+  empty.style.display='none';
+  wrap.innerHTML=allLinksList.map(l=>{
+    const allowed=l.active&&!l.expired;
+    const pct=l.limit_bytes===0?0:Math.min(100,l.used_bytes/l.limit_bytes*100);
+    const bc=pct>90?'var(--red)':pct>70?'var(--amber)':'var(--accent)';
+    return `<div class="cfgdash-item${cfgDashSelected===l.uuid?' on':''}" onclick="selectCfgDash('${l.uuid}')">
+      <div class="cfgdash-item-top"><span class="cfg-status-dot ${allowed?'pulse':''}"></span><span class="cfgdash-item-label">${esc(l.label)}</span>${protoBadge(l.protocol)}</div>
+      <div class="ubar"><div class="ubar-f" style="width:${pct}%;background:${bc}"></div></div>
+      <div class="utxt"><span>${fmtB(l.used_bytes)}</span><span>${l.connected_ips||0} آی‌پی زنده</span></div>
+    </div>`;
+  }).join('');
+}
+function selectCfgDash(uuid){cfgDashSelected=uuid;renderCfgDashList();renderCfgDashDetail(uuid)}
+function renderCfgDashDetail(uuid){
+  const box=document.getElementById('cfgdash-detail');
+  const l=allLinksList.find(x=>x.uuid===uuid);
+  if(!l){box.innerHTML='<div class="card"><div class="empty"><i class="ti ti-mood-empty"></i><p>این کانفیگ دیگر وجود ندارد</p></div></div>';return}
+  const grp=(window.__lastConfigs||[]).find(c=>c.uuid===uuid);
+  const ips=grp?grp.connections||[]:[];
+  const pct=l.limit_bytes===0?0:Math.min(100,l.used_bytes/l.limit_bytes*100);
+  const bc=pct>90?'var(--red)':pct>70?'var(--amber)':'var(--accent)';
+  const speedTxt=l.speed_limit_bytes?((l.speed_limit_bytes*8/1024/1024).toFixed(1)+' Mbps'):'نامحدود';
+  box.innerHTML=`
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title"><i class="ti ti-key"></i> ${esc(l.label)} ${l.active&&!l.expired?'<span class="badge bg-green" style="margin-right:6px">فعال</span>':'<span class="badge bg-red" style="margin-right:6px">'+(l.expired?'منقضی':'غیرفعال')+'</span>'}
+        <span class="ml-auto" style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-g btn-icon" onclick="navigator.clipboard.writeText('${esc(l.vless_link)}').then(()=>toast('لینک کپی شد','ok'))" title="کپی لینک"><i class="ti ti-copy"></i></button>
+          <button class="btn btn-sm btn-g btn-icon" onclick="showQR('${esc(l.vless_link)}')" title="QR"><i class="ti ti-qrcode"></i></button>
+          <button class="btn btn-sm btn-g btn-icon" onclick="openLinkChart('${l.uuid}','${esc(l.label)}')" title="نمودار مصرف"><i class="ti ti-chart-line"></i></button>
+        </span>
+      </div>
+      <div class="cfgdash-stats">
+        <div class="cfgdash-stat"><div class="cfgdash-stat-l">مصرف / سقف</div><div class="cfgdash-stat-v">${fmtB(l.used_bytes)}</div><div class="utxt" style="margin-top:6px"><span></span><span>از ${l.limit_bytes===0?'∞':fmtB(l.limit_bytes)}</span></div><div class="ubar" style="margin-top:6px"><div class="ubar-f" style="width:${pct}%;background:${bc}"></div></div></div>
+        <div class="cfgdash-stat"><div class="cfgdash-stat-l">محدودیت سرعت</div><div class="cfgdash-stat-v" style="font-size:14px">${speedTxt}</div></div>
+        <div class="cfgdash-stat"><div class="cfgdash-stat-l">آی‌پی زنده / محدودیت</div><div class="cfgdash-stat-v">${toFa(l.connected_ips||0)}${l.ip_limit?(' / '+toFa(l.ip_limit)):' (∞)'}</div></div>
+        <div class="cfgdash-stat"><div class="cfgdash-stat-l">انقضا</div><div class="cfgdash-stat-v" style="font-size:14px">${expChip(l.expires_at,l.expired)}</div></div>
+      </div>
+      <div class="sr"><span class="sr-k"><i class="ti ti-route"></i> پروتکل</span><span class="sr-v">${protoBadge(l.protocol)}</span></div>
+      <div class="sr"><span class="sr-k"><i class="ti ti-plug"></i> پورت</span><span class="sr-v">${toFa(l.port||443)}</span></div>
+      <div class="sr"><span class="sr-k"><i class="ti ti-fingerprint"></i> Fingerprint</span><span class="sr-v">${esc(l.fingerprint||'chrome')}</span></div>
+      <div class="sr"><span class="sr-k"><i class="ti ti-calendar"></i> تاریخ ساخت</span><span class="sr-v">${new Date(l.created_at).toLocaleDateString('fa-IR')}</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-map-pin"></i> آی‌پی‌های متصل هم‌اکنون <span class="ml-auto badge bg-blue">${toFa(ips.length)}</span></div>
+      ${ips.length?ips.map(c=>{
+        const secs=c.connected_at?Math.max(0,Math.floor((Date.now()-new Date(c.connected_at).getTime())/1000)):0;
+        const dur=secs<60?secs+' ثانیه':secs<3600?Math.floor(secs/60)+' دقیقه':Math.floor(secs/3600)+' ساعت';
+        return `<div class="cfgdash-ip-row">
+          <span class="ip"><span class="dot dg pulse" style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block"></span> ${esc(c.ip)}</span>
+          <div class="cfgdash-ip-meta">
+            <span><i class="ti ti-repeat"></i> ${toFa(c.sessions)} سشن</span>
+            <span><i class="ti ti-transfer"></i> ${esc(c.bytes_fmt)}</span>
+            <span><i class="ti ti-clock"></i> ${dur}</span>
+          </div>
+        </div>`;
+      }).join(''):'<div class="empty"><i class="ti ti-plug-off"></i><p>در حال حاضر آی‌پی متصلی به این کانفیگ نیست</p></div>'}
+    </div>
+  `;
+}
+
+async function loadErrs(){try{const r=await authF('/stats'),d=await r.json();renderErrs(d.recent_errors||[]);}catch(e){}}
 function cpText(id){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>toast('کپی شد ✓','ok'))}
 function qrFor(id){showQR(document.getElementById(id).textContent)}
-function refreshAll(){fetchStats();fetchDefaultVless();loadLinks();if(document.getElementById('pg-subgroups').classList.contains('on'))loadSubs();if(document.getElementById('pg-subscriptions').classList.contains('on'))loadSubsPage();if(document.getElementById('pg-connections').classList.contains('on'))loadConns();if(document.getElementById('pg-logs').classList.contains('on'))loadActivity();toast('رفرش شد','ok')}
+function refreshAll(){fetchStats();loadLinks();if(document.getElementById('pg-connections').classList.contains('on'))loadConns();if(document.getElementById('pg-logs').classList.contains('on'))loadActivity();toast('رفرش شد','ok')}
 async function changePw(){
   const cur=document.getElementById('cp-cur').value,nw=document.getElementById('cp-new').value,cf=document.getElementById('cp-cf').value;
   if(!cur||!nw||!cf){toast('همه فیلدها را پر کنید','err');return}
@@ -1948,15 +1903,13 @@ document.addEventListener('DOMContentLoaded',async()=>{
   await checkAuth();
   initCharts();
   document.getElementById('set-host').textContent=location.host;
-  document.getElementById('sub-all-url')&&(document.getElementById('sub-all-url').textContent=location.protocol+'//'+location.host+'/sub-all');
-  fetchStats();fetchDefaultVless();loadLinks();loadSubs();
+  fetchStats();loadLinks();
   setInterval(fetchStats,4000);
   setInterval(()=>{
     if(document.getElementById('pg-links').classList.contains('on'))loadLinks();
-    if(document.getElementById('pg-subgroups').classList.contains('on'))loadSubs();
-    if(document.getElementById('pg-subscriptions').classList.contains('on'))loadSubsPage();
     if(document.getElementById('pg-connections').classList.contains('on'))loadConns();
     if(document.getElementById('pg-logs').classList.contains('on'))loadActivity();
+    if(document.getElementById('pg-cfgdash').classList.contains('on'))loadCfgDash();
   },5000);
 });
 </script>
@@ -2162,7 +2115,7 @@ html,body{{min-height:100%;background:var(--bg);font-family:var(--serif);color:v
   <div class="top">
     <div class="brand">
       <div class="brand-img"><img src="data:image/png;base64,{LOGO_B64}" alt="X4G"></div>
-      <div><div class="brand-name">X4G</div><div class="brand-sub">v9.5</div></div>
+      <div><div class="brand-name">X4G</div><div class="brand-sub">v9.8</div></div>
     </div>
     <div class="top-actions">
       <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" title="تغییر تم"><i class="ti ti-sun" id="theme-icon"></i></button>
@@ -2172,7 +2125,7 @@ html,body{{min-height:100%;background:var(--bg);font-family:var(--serif);color:v
   <div id="root">
     <div class="empty-state"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i>در حال بارگذاری...</div>
   </div>
-  <div class="footer">پشتیبانی: <a href="https://t.me/Farajian2004f" target="_blank">@Farajian2004f</a> · X4G v9.5</div>
+  <div class="footer">پشتیبانی: <a href="https://t.me/X4GHUB" target="_blank">@X4GHUB</a> · X4G v9.8</div>
 </div>
 <script>
 const UUID_KEY='{uuid_key}';
@@ -2195,8 +2148,7 @@ function esc(s){{return String(s||'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'
 function fmtB(b){{if(!b||b===0)return '0 B';if(b<1024)return b+' B';if(b<1024**2)return (b/1024).toFixed(1)+' KB';if(b<1024**3)return (b/1024**2).toFixed(2)+' MB';return (b/1024**3).toFixed(2)+' GB'}}
 function toFa(n){{return String(n).replace(/\\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d])}}
 function protoChip(p){{
-  if(p==='xhttp-stream-one')return '<span class="proto-chip pc-ultra"><i class="ti ti-bolt"></i> XHTTP ULTRA</span>';
-  if(p&&p.startsWith('xhttp'))return '<span class="proto-chip pc-xhttp">'+esc(p)+'</span>';
+  if(p&&p.startsWith('xhttp'))return '<span class="proto-chip pc-xhttp"><i class="ti ti-bolt"></i> XHTTP · auto</span>';
   return '<span class="proto-chip pc-ws">VLESS · WS</span>';
 }}
 
@@ -2264,14 +2216,14 @@ async function submitLock(){{
 
 function renderContent(d){{
   const activeCount=d.links.filter(l=>l.active).length;
-  const baseSubUrl = d.sub_url || (window.location.protocol + '//' + window.location.host + '/sub-group/' + UUID_KEY);
-  const subUrl = baseSubUrl + (savedPw ? '?pw=' + encodeURIComponent(savedPw) : '');
+  const baseSubUrl = d.sub_url || (window.location.protocol + '//' + window.location.host + '/p/' + UUID_KEY);
+  const subUrl = baseSubUrl;
 
   window._x4gSubUrl  = subUrl;
   window._x4gSubName = d.name;
   window._x4gLinks   = d.links.map(l => ({{
     vless : l.vless_link,
-    sub   : l.sub_url + (savedPw ? '?pw=' + encodeURIComponent(savedPw) : ''),
+    sub   : l.sub_url,
     label : l.label,
   }}));
 

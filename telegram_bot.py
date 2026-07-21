@@ -33,10 +33,6 @@ from main import (
     MAX_PORT,
     parse_size_to_bytes,
     parse_speed_to_bytes,
-    SUBS,
-    create_sub_group,
-    set_link_sub,
-    remove_sub_group,
 )
 
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
@@ -58,9 +54,7 @@ WIZARD_STEPS = ["label", "protocol", "fingerprint", "alpn", "port", "volume", "s
 
 PROTOCOL_LABELS = {
     "vless-ws": "VLESS + WebSocket",
-    "xhttp-packet-up": "XHTTP (packet-up)",
-    "xhttp-stream-up": "XHTTP (stream-up)",
-    "xhttp-stream-one": "XHTTP (stream-one)",
+    "xhttp": "XHTTP (mode: auto)",
 }
 
 def _protocol_label(p: str) -> str:
@@ -148,7 +142,6 @@ def _main_menu_kb():
     return {"inline_keyboard": [
         [{"text": "📋 لیست کانفیگ‌ها", "callback_data": "list:0"}],
         [{"text": "➕ ساخت کانفیگ جدید", "callback_data": "newcfg"}],
-        [{"text": "🗂 گروه‌های ساب (لینک حرفه‌ای)", "callback_data": "subs:0"}],
         [{"text": "🔄 رفرش", "callback_data": "menu"}],
     ]}
 
@@ -175,7 +168,6 @@ def _links_list_kb(page: int):
 def _link_detail_kb(uid: str, active: bool):
     return {"inline_keyboard": [
         [{"text": "🔗 نمایش لینک اتصال", "callback_data": f"link:{uid}"}],
-        [{"text": "🗂 گروه ساب (لینک حرفه‌ای)", "callback_data": f"cfggroup:{uid}"}],
         [{"text": ("⛔ غیرفعال‌سازی" if active else "✅ فعال‌سازی"), "callback_data": f"toggle:{uid}"}],
         [{"text": "🗑 حذف کانفیگ", "callback_data": f"del:{uid}"}],
         [{"text": "⬅ بازگشت به لیست", "callback_data": "list:0"}],
@@ -301,106 +293,6 @@ def _format_detail(uid: str, l: dict) -> str:
         f"UUID: <code>{uid}</code>"
     )
 
-# ── Sub-group (لینک ساب حرفه‌ای) view builders ────────────────────────────────
-def _group_public_url(s: dict) -> str:
-    host = get_host()
-    return f"https://{host}/p/{s.get('uuid_key','')}"
-
-def _subs_list_kb(page: int):
-    items = sorted(SUBS.items(), key=lambda kv: kv[1].get("created_at", ""), reverse=True)
-    total = len(items)
-    start = page * PAGE_SIZE
-    chunk = items[start:start + PAGE_SIZE]
-    rows = []
-    for sid, s in chunk:
-        cnt = len(s.get("link_ids", []))
-        rows.append([{"text": f"🗂 {s.get('name','?')[:26]} ({cnt})", "callback_data": f"subview:{sid}"}])
-    nav = []
-    if start > 0:
-        nav.append({"text": "◀ قبلی", "callback_data": f"subs:{page-1}"})
-    if start + PAGE_SIZE < total:
-        nav.append({"text": "بعدی ▶", "callback_data": f"subs:{page+1}"})
-    if nav:
-        rows.append(nav)
-    rows.append([{"text": "➕ ساخت گروه جدید", "callback_data": "newsub"}])
-    rows.append([{"text": "⬅ منوی اصلی", "callback_data": "menu"}])
-    return {"inline_keyboard": rows}
-
-def _format_sub_detail(sid: str, s: dict) -> str:
-    cnt = len(s.get("link_ids", []))
-    pw = "🔒 دارد" if s.get("password_hash") else "بدون رمز"
-    desc = s.get("desc") or "—"
-    return (
-        f"🗂 <b>{s.get('name','?')}</b>\n"
-        f"توضیحات: {desc}\n"
-        f"تعداد کانفیگ‌های داخل گروه: {cnt}\n"
-        f"رمز عبور: {pw}\n\n"
-        f"🔗 لینک ساب حرفه‌ای این گروه:\n<code>{_group_public_url(s)}</code>"
-    )
-
-def _sub_detail_kb(sid: str):
-    return {"inline_keyboard": [
-        [{"text": "➕ افزودن کانفیگ به این گروه", "callback_data": f"subaddlink:{sid}:0"}],
-        [{"text": "🗑 حذف گروه", "callback_data": f"subdel:{sid}"}],
-        [{"text": "⬅ بازگشت به لیست گروه‌ها", "callback_data": "subs:0"}],
-    ]}
-
-def _confirm_subdel_kb(sid: str):
-    return {"inline_keyboard": [
-        [{"text": "✅ بله، حذف کن", "callback_data": f"subdelok:{sid}"},
-         {"text": "❌ انصراف", "callback_data": f"subview:{sid}"}],
-    ]}
-
-def _pick_link_for_group_kb(sid: str, page: int):
-    """لیست همه‌ی کانفیگ‌ها برای انتخاب و افزودن به یک گروه ساب مشخص."""
-    items = sorted(LINKS.items(), key=lambda kv: kv[1].get("created_at", ""), reverse=True)
-    total = len(items)
-    start = page * PAGE_SIZE
-    chunk = items[start:start + PAGE_SIZE]
-    rows = []
-    for uid, l in chunk:
-        in_this = "✅ " if l.get("sub_id") == sid else ""
-        rows.append([{"text": f"{in_this}{l.get('label','?')[:28]}", "callback_data": f"subaddlinkdo:{uid}"}])
-    nav = []
-    if start > 0:
-        nav.append({"text": "◀ قبلی", "callback_data": f"subaddlink:{sid}:{page-1}"})
-    if start + PAGE_SIZE < total:
-        nav.append({"text": "بعدی ▶", "callback_data": f"subaddlink:{sid}:{page+1}"})
-    if nav:
-        rows.append(nav)
-    rows.append([{"text": "⬅ بازگشت به گروه", "callback_data": f"subview:{sid}"}])
-    return {"inline_keyboard": rows}
-
-# ── Per-config "group" (ساب لینک حرفه‌ای) view builders ───────────────────────
-def _cfg_group_kb(uid: str):
-    link = LINKS.get(uid, {})
-    sid = link.get("sub_id")
-    if sid and sid in SUBS:
-        return {"inline_keyboard": [
-            [{"text": "➖ خارج کردن از گروه", "callback_data": f"cfgungroup:{uid}"}],
-            [{"text": "⬅ بازگشت", "callback_data": f"view:{uid}"}],
-        ]}
-    rows = []
-    for sid2, s in sorted(SUBS.items(), key=lambda kv: kv[1].get("created_at", ""), reverse=True)[:8]:
-        rows.append([{"text": f"➕ افزودن به «{s.get('name','?')[:24]}»", "callback_data": f"cfgaddgroup:{sid2}"}])
-    rows.append([{"text": "🆕 ساخت گروه جدید و افزودن", "callback_data": f"cfgnewgroup:{uid}"}])
-    rows.append([{"text": "⬅ بازگشت", "callback_data": f"view:{uid}"}])
-    return {"inline_keyboard": rows}
-
-def _format_cfg_group(uid: str) -> str:
-    link = LINKS.get(uid, {})
-    sid = link.get("sub_id")
-    if sid and sid in SUBS:
-        s = SUBS[sid]
-        return (
-            f"🗂 کانفیگ «{link.get('label','?')}» توی گروه «{s.get('name','?')}» هست.\n\n"
-            f"🔗 لینک ساب حرفه‌ای این گروه:\n<code>{_group_public_url(s)}</code>"
-        )
-    return (
-        f"کانفیگ «{link.get('label','?')}» توی هیچ گروهی نیست، یعنی فقط لینک ساب ساده داره.\n\n"
-        "برای گرفتن لینک ساب حرفه‌ای (صفحه‌ی زیبا)، این کانفیگ رو به یک گروه اضافه کن یا یه گروه جدید بساز:"
-    )
-
 # ── Update handling ──────────────────────────────────────────────────────────
 async def _handle_message(msg: dict):
     chat_id = msg.get("chat", {}).get("id")
@@ -422,18 +314,6 @@ async def _handle_message(msg: dict):
         return
 
     pending = _pending.get(chat_id)
-
-    if pending and pending.get("action") == "newsub" and pending.get("step") == "name" and text:
-        name = text[:60]
-        sid, s = await create_sub_group(name=name)
-        link_uid = pending.get("link_uid")
-        _pending.pop(chat_id, None)
-        if link_uid and link_uid in LINKS:
-            await set_link_sub(link_uid, sid)
-            await _send(chat_id, f"✅ گروه ساخته شد و کانفیگ به اون اضافه شد.\n\n{_format_cfg_group(link_uid)}", _cfg_group_kb(link_uid))
-        else:
-            await _send(chat_id, f"✅ گروه ساخته شد.\n\n{_format_sub_detail(sid, s)}", _sub_detail_kb(sid))
-        return
 
     if pending and pending.get("action") == "wizard" and text:
         step = pending["step"]
@@ -535,119 +415,6 @@ async def _handle_callback(cb: dict):
             await _edit(chat_id, message_id, "هنوز هیچ کانفیگی ساخته نشده.", _main_menu_kb())
             return
         await _edit(chat_id, message_id, f"📋 لیست کانفیگ‌ها ({len(LINKS)} مورد):", _links_list_kb(page))
-        return
-
-    # ── گروه‌های ساب (لینک حرفه‌ای) ────────────────────────────────────────────
-    if data.startswith("subs:"):
-        page = int(data.split(":", 1)[1] or 0)
-        if not SUBS:
-            await _edit(chat_id, message_id, "هنوز هیچ گروهی ساخته نشده.\n\nبرای گرفتن لینک ساب حرفه‌ای (صفحه‌ی زیبا)، اول یه گروه بساز و کانفیگ مورد نظرت رو داخلش بذار.", _subs_list_kb(0))
-            return
-        await _edit(chat_id, message_id, f"🗂 گروه‌های ساب ({len(SUBS)} مورد):", _subs_list_kb(page))
-        return
-
-    if data == "newsub":
-        _pending[chat_id] = {"action": "newsub", "step": "name", "link_uid": None}
-        await _edit(chat_id, message_id, "✏️ اسم گروه رو بفرست (این اسم فقط برای خودت توی مدیریت گروه‌هاست):", _wizard_cancel_kb())
-        return
-
-    if data.startswith("subview:"):
-        sid = data.split(":", 1)[1]
-        s = SUBS.get(sid)
-        if not s:
-            await _edit(chat_id, message_id, "این گروه دیگه وجود نداره.", _main_menu_kb())
-            return
-        await _edit(chat_id, message_id, _format_sub_detail(sid, s), _sub_detail_kb(sid))
-        return
-
-    if data.startswith("subaddlink:"):
-        _, sid, page_s = data.split(":", 2)
-        if sid not in SUBS:
-            await _edit(chat_id, message_id, "این گروه دیگه وجود نداره.", _main_menu_kb())
-            return
-        if not LINKS:
-            await _edit(chat_id, message_id, "هنوز هیچ کانفیگی نداری که به گروه اضافه کنی.", _sub_detail_kb(sid))
-            return
-        _pending[chat_id] = {"action": "subaddlink_ctx", "sid": sid}
-        await _edit(chat_id, message_id, "کدوم کانفیگ رو به این گروه اضافه کنم؟\n(کانفیگ‌هایی که علامت ✅ دارن همین الان توی این گروهن)", _pick_link_for_group_kb(sid, int(page_s or 0)))
-        return
-
-    if data.startswith("subaddlinkdo:"):
-        uid = data.split(":", 1)[1]
-        ctx = _pending.get(chat_id) or {}
-        sid = ctx.get("sid") if ctx.get("action") == "subaddlink_ctx" else None
-        if not sid or sid not in SUBS:
-            await _answer_cb(cb_id, "این عملیات منقضی شده، از منوی گروه‌ها دوباره امتحان کن.")
-            return
-        ok = await set_link_sub(uid, sid)
-        if not ok:
-            await _answer_cb(cb_id, "این کانفیگ دیگه وجود نداره")
-            return
-        _pending.pop(chat_id, None)
-        s = SUBS.get(sid)
-        await _edit(chat_id, message_id, f"✅ کانفیگ به گروه اضافه شد.\n\n{_format_sub_detail(sid, s)}", _sub_detail_kb(sid))
-        return
-
-    if data.startswith("subdel:"):
-        sid = data.split(":", 1)[1]
-        s = SUBS.get(sid)
-        if not s:
-            await _edit(chat_id, message_id, "این گروه دیگه وجود نداره.", _main_menu_kb())
-            return
-        await _edit(chat_id, message_id, f"❗️ از حذف گروه «{s.get('name')}» مطمئنی؟ لینک ساب حرفه‌ای‌اش دیگه کار نمی‌کنه (کانفیگ‌ها حذف نمی‌شن، فقط از گروه خارج می‌شن).", _confirm_subdel_kb(sid))
-        return
-
-    if data.startswith("subdelok:"):
-        sid = data.split(":", 1)[1]
-        name = await remove_sub_group(sid)
-        if name is None:
-            await _edit(chat_id, message_id, "این گروه قبلاً حذف شده بود.", _main_menu_kb())
-        else:
-            await _edit(chat_id, message_id, f"🗑 گروه «{name}» حذف شد.", _main_menu_kb())
-        return
-
-    # ── گروه یک کانفیگ خاص (از صفحه‌ی جزئیات کانفیگ) ───────────────────────────
-    if data.startswith("cfggroup:"):
-        uid = data.split(":", 1)[1]
-        if uid not in LINKS:
-            await _edit(chat_id, message_id, "این کانفیگ دیگه وجود نداره.", _main_menu_kb())
-            return
-        _pending[chat_id] = {"action": "cfg_group_ctx", "uid": uid}
-        await _edit(chat_id, message_id, _format_cfg_group(uid), _cfg_group_kb(uid))
-        return
-
-    if data.startswith("cfgungroup:"):
-        uid = data.split(":", 1)[1]
-        await set_link_sub(uid, None)
-        l = LINKS.get(uid)
-        if not l:
-            await _edit(chat_id, message_id, "این کانفیگ دیگه وجود نداره.", _main_menu_kb())
-            return
-        await _edit(chat_id, message_id, _format_detail(uid, l), _link_detail_kb(uid, l["active"]))
-        return
-
-    if data.startswith("cfgaddgroup:"):
-        sid = data.split(":", 1)[1]
-        ctx = _pending.get(chat_id) or {}
-        uid = ctx.get("uid") if ctx.get("action") == "cfg_group_ctx" else None
-        if not uid or uid not in LINKS:
-            await _answer_cb(cb_id, "این عملیات منقضی شده، از روی کانفیگ دوباره وارد این بخش شو.")
-            return
-        ok = await set_link_sub(uid, sid)
-        if not ok:
-            await _answer_cb(cb_id, "این گروه دیگه وجود نداره")
-            return
-        _pending.pop(chat_id, None)
-        await _edit(chat_id, message_id, f"✅ کانفیگ به گروه اضافه شد.\n\n{_format_cfg_group(uid)}", _cfg_group_kb(uid))
-        return
-
-    if data.startswith("cfgnewgroup:"):
-        uid = data.split(":", 1)[1]
-        if uid not in LINKS:
-            await _edit(chat_id, message_id, "این کانفیگ دیگه وجود نداره.", _main_menu_kb())
-            return
-        _pending[chat_id] = {"action": "newsub", "step": "name", "link_uid": uid}
-        await _edit(chat_id, message_id, "✏️ اسم گروه جدید رو بفرست؛ بعد از ساخته شدن، همین کانفیگ خودکار داخلش قرار می‌گیره:", _wizard_cancel_kb())
         return
 
     if data == "newcfg":
@@ -775,12 +542,12 @@ async def _handle_callback(cb: dict):
         host = get_host()
         vless = vless_link_for_link(l, uid, host)
         sub_url = f"https://{host}/sub/{uid}"
-        msg = f"🔗 لینک اتصال «{l.get('label')}»:\n\n<code>{vless}</code>\n\nلینک ساب ساده (فقط متن کانفیگ):\n<code>{sub_url}</code>"
-        sid = l.get("sub_id")
-        if sid and sid in SUBS:
-            msg += f"\n\n✨ لینک ساب حرفه‌ای گروه «{SUBS[sid].get('name','?')}»:\n<code>{_group_public_url(SUBS[sid])}</code>"
-        else:
-            msg += "\n\nℹ️ این کانفیگ توی هیچ گروهی نیست. برای گرفتن لینک ساب حرفه‌ای، از دکمه‌ی «🗂 گروه ساب» توی صفحه‌ی کانفیگ استفاده کن."
+        public_url = f"https://{host}/p/{uid}"
+        msg = (
+            f"🔗 لینک اتصال «{l.get('label')}»:\n\n<code>{vless}</code>\n\n"
+            f"لینک ساب ساده (فقط متن کانفیگ):\n<code>{sub_url}</code>\n\n"
+            f"✨ لینک ساب حرفه‌ای (صفحه‌ی زیبا):\n<code>{public_url}</code>"
+        )
         await _send(chat_id, msg)
         return
 

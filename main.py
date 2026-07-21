@@ -80,6 +80,13 @@ async def load_state():
             SUBS.update(data.get("subs", {}))
             if "password_hash" in data:
                 AUTH["password_hash"] = data["password_hash"]
+            # لینک پیش‌فرضی که در نسخه‌های قبلی به‌صورت خودکار ساخته می‌شد دیگر
+            # پشتیبانی نمی‌شود؛ اگر از قبل روی دیسک ذخیره شده باشد، حذفش می‌کنیم.
+            legacy_default_uids = [uid for uid, l in LINKS.items() if l.get("is_default")]
+            for uid in legacy_default_uids:
+                LINKS.pop(uid, None)
+            if legacy_default_uids:
+                asyncio.create_task(save_state())
             logger.info(f"State loaded: {len(LINKS)} links, {len(SUBS)} subs")
     except Exception as e:
         logger.warning(f"Could not load state: {e}")
@@ -119,7 +126,7 @@ SUBS: dict = {}
 SUBS_LOCK = asyncio.Lock()
 
 # پروتکل‌های پشتیبانی‌شده برای هر کانفیگ
-PROTOCOLS = ("vless-ws", "xhttp-packet-up", "xhttp-stream-up", "xhttp-stream-one")
+PROTOCOLS = ("vless-ws", "xhttp")
 DEFAULT_PROTOCOL = "vless-ws"
 
 # Fingerprint (uTLS) های قابل انتخاب برای هر کانفیگ
@@ -129,9 +136,7 @@ DEFAULT_FINGERPRINT = "chrome"
 # پیش‌فرض ALPN بر اساس نوع ترابرد (اگر کاربر مقدار دستی نده)
 DEFAULT_ALPN_BY_PROTOCOL = {
     "vless-ws": "http/1.1",
-    "xhttp-packet-up": "h2,http/1.1",
-    "xhttp-stream-up": "h2,http/1.1",
-    "xhttp-stream-one": "h2,http/1.1",
+    "xhttp": "h2,http/1.1",
 }
 DEFAULT_PORT = 443
 MIN_PORT, MAX_PORT = 1, 65535
@@ -263,14 +268,14 @@ def generate_vless_link(
             "alpn": alpn_val,
         }
     else:
-        # xhttp-packet-up / xhttp-stream-up / xhttp-stream-one
-        mode = protocol.replace("xhttp-", "")  # packet-up | stream-up | stream-one
-        path = f"/xhttp-siz10/{mode}/{uuid}"
+        # xhttp — مود auto: خود کلاینت بر اساس نوع اتصال (H2/REALITY یا نه)
+        # بین packet-up و stream-up انتخاب می‌کنه؛ مسیر سرور به مود بستگی نداره.
+        path = f"/xhttp-siz10/{uuid}"
         params = {
             "encryption": "none",
             "security": "tls",
             "type": "xhttp",
-            "mode": mode,
+            "mode": "auto",
             "host": host,
             "path": path,
             "sni": host,
@@ -374,41 +379,11 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client else "نامشخص"
 
 # ── Default link ──────────────────────────────────────────────────────────────
-_default_link_created = False
-
-async def ensure_default_link():
-    global _default_link_created
-    if _default_link_created:
-        return
-    async with LINKS_LOCK:
-        if not any(l.get("is_default") for l in LINKS.values()):
-            uid = hashlib.sha256(f"default{CONFIG['secret']}".encode()).hexdigest()
-            uid = f"{uid[:8]}-{uid[8:12]}-{uid[12:16]}-{uid[16:20]}-{uid[20:32]}"
-            if uid not in LINKS:
-                LINKS[uid] = {
-                    "label": "لینک پیش‌فرض",
-                    "limit_bytes": 0,
-                    "used_bytes": 0,
-                    "created_at": datetime.now().isoformat(),
-                    "active": True,
-                    "expires_at": None,
-                    "note": "",
-                    "is_default": True,
-                    "sub_id": None,
-                    "protocol": DEFAULT_PROTOCOL,
-                    "fingerprint": DEFAULT_FINGERPRINT,
-                    "alpn": "",
-                    "port": DEFAULT_PORT,
-                    "ip_limit": 0,
-                    "speed_limit_bytes": DEFAULT_SPEED_LIMIT,
-                }
-                asyncio.create_task(save_state())
-        _default_link_created = True
 
 # ── Basic endpoints ───────────────────────────────────────────────────────────
 @app.get("/")
 async def root():
-    return {"service": "X4G", "version": "9.5", "status": "active", "channel": "https://t.me/Farajian2004f"}
+    return {"service": "X4G", "version": "9.5", "status": "active", "channel": "https://t.me/X4GHUB"}
 
 @app.get("/health")
 async def health():
@@ -426,7 +401,7 @@ async def subscription_single(uuid: str, request: Request):
     vless = vless_link_for_link(link, uuid, host)
     content = base64.b64encode(vless.encode()).decode()
     return Response(content=content, media_type="text/plain",
-                    headers={"profile-title": quote(link["label"]), "support-url": "https://t.me/Farajian2004f"})
+                    headers={"profile-title": quote(link["label"]), "support-url": "https://t.me/X4GHUB"})
 
 @app.get("/sub-all")
 async def subscription_all(request: Request, _=Depends(require_auth)):
@@ -440,154 +415,6 @@ async def subscription_all(request: Request, _=Depends(require_auth)):
         ]
     content = base64.b64encode("\n".join(lines).encode()).decode()
     return Response(content=content, media_type="text/plain")
-
-# ══════════════════════════════════════════════════════════════════════════════
-# SUB GROUP endpoints
-# ══════════════════════════════════════════════════════════════════════════════
-
-@app.post("/api/subs")
-async def create_sub(request: Request, _=Depends(require_auth)):
-    body = await request.json()
-    name = (body.get("name") or "گروه جدید").strip()[:60]
-    desc = (body.get("desc") or "").strip()[:200]
-    password = (body.get("password") or "").strip()
-    sub_id = generate_uuid()
-    uuid_key = secrets.token_urlsafe(16)
-    async with SUBS_LOCK:
-        SUBS[sub_id] = {
-            "name": name,
-            "desc": desc,
-            "password_hash": hash_password(password) if password else None,
-            "uuid_key": uuid_key,
-            "created_at": datetime.now().isoformat(),
-            "link_ids": [],
-        }
-    asyncio.create_task(save_state())
-    log_activity("sub", f"گروه «{name}» ساخته شد", "ok")
-    host = get_host(request)
-    return {
-        "sub_id": sub_id,
-        **SUBS[sub_id],
-        "public_url": f"https://{host}/p/{uuid_key}",
-        "sub_url": f"https://{host}/sub-group/{uuid_key}",
-    }
-
-@app.get("/api/subs")
-async def list_subs(request: Request, _=Depends(require_auth)):
-    host = get_host(request)
-    async with SUBS_LOCK:
-        snap_subs = dict(SUBS)
-    async with LINKS_LOCK:
-        snap_links = dict(LINKS)
-    result = []
-    for sid, s in snap_subs.items():
-        link_ids = s.get("link_ids", [])
-        active_count = sum(1 for lid in link_ids if is_link_allowed(snap_links.get(lid)))
-        total_used = sum(snap_links[lid].get("used_bytes", 0) for lid in link_ids if lid in snap_links)
-        result.append({
-            "sub_id": sid,
-            **s,
-            "password_hash": None,
-            "has_password": s.get("password_hash") is not None,
-            "links_count": len(link_ids),
-            "active_count": active_count,
-            "total_used_bytes": total_used,
-            "total_used_fmt": fmt_bytes(total_used),
-            "public_url": f"https://{host}/p/{s['uuid_key']}",
-            "sub_url": f"https://{host}/sub-group/{s['uuid_key']}",
-        })
-    result.sort(key=lambda x: x["created_at"], reverse=True)
-    return {"subs": result}
-
-@app.patch("/api/subs/{sub_id}")
-async def update_sub(sub_id: str, request: Request, _=Depends(require_auth)):
-    body = await request.json()
-    async with SUBS_LOCK:
-        if sub_id not in SUBS:
-            raise HTTPException(status_code=404, detail="sub not found")
-        s = SUBS[sub_id]
-        if "name" in body:
-            s["name"] = str(body["name"])[:60]
-        if "desc" in body:
-            s["desc"] = str(body["desc"])[:200]
-        if "password" in body:
-            pw = str(body["password"]).strip()
-            s["password_hash"] = hash_password(pw) if pw else None
-        if "link_ids" in body:
-            s["link_ids"] = list(body["link_ids"])
-    asyncio.create_task(save_state())
-    return {"ok": True}
-
-@app.delete("/api/subs/{sub_id}")
-async def delete_sub(sub_id: str, _=Depends(require_auth)):
-    async with SUBS_LOCK:
-        if sub_id not in SUBS:
-            raise HTTPException(status_code=404, detail="sub not found")
-        name = SUBS[sub_id].get("name", sub_id)
-        del SUBS[sub_id]
-    async with LINKS_LOCK:
-        for link in LINKS.values():
-            if link.get("sub_id") == sub_id:
-                link["sub_id"] = None
-    asyncio.create_task(save_state())
-    log_activity("sub", f"گروه «{name}» حذف شد", "warn")
-    return {"ok": True, "deleted": sub_id}
-
-@app.post("/api/subs/{sub_id}/links")
-async def assign_link_to_sub(sub_id: str, request: Request, _=Depends(require_auth)):
-    body = await request.json()
-    link_id = str(body.get("link_id", ""))
-    action = str(body.get("action", "add"))
-    async with SUBS_LOCK:
-        if sub_id not in SUBS:
-            raise HTTPException(status_code=404, detail="sub not found")
-        s = SUBS[sub_id]
-        ids = s.setdefault("link_ids", [])
-        if action == "add":
-            if link_id not in ids:
-                ids.append(link_id)
-        else:
-            if link_id in ids:
-                ids.remove(link_id)
-    async with LINKS_LOCK:
-        if link_id in LINKS:
-            LINKS[link_id]["sub_id"] = sub_id if action == "add" else None
-    asyncio.create_task(save_state())
-    return {"ok": True}
-
-# ── Public sub-group subscription file ───────────────────────────────────────
-@app.get("/sub-group/{uuid_key}")
-async def sub_group_subscription(uuid_key: str, request: Request):
-    import base64
-    async with SUBS_LOCK:
-        sub = next((s for s in SUBS.values() if s.get("uuid_key") == uuid_key), None)
-    if not sub:
-        raise HTTPException(status_code=404, detail="not found")
-
-    if sub.get("password_hash"):
-        pw = request.query_params.get("pw", "")
-        if hash_password(pw) != sub["password_hash"]:
-            raise HTTPException(status_code=403, detail="wrong password")
-
-    host = get_host(request)
-    link_ids = sub.get("link_ids", [])
-    async with LINKS_LOCK:
-        lines = []
-        for lid in link_ids:
-            link = LINKS.get(lid)
-            if link and is_link_allowed(link):
-                lines.append(vless_link_for_link(link, lid, host))
-
-    content = base64.b64encode("\n".join(lines).encode()).decode()
-    return Response(
-        content=content,
-        media_type="text/plain",
-        headers={
-            "profile-title": quote(sub["name"]),
-            "support-url": "https://t.me/Farajian2004f",
-            "profile-update-interval": "12",
-        }
-    )
 
 # ── Auth endpoints ────────────────────────────────────────────────────────────
 @app.post("/api/login")
@@ -647,7 +474,6 @@ async def get_stats(_=Depends(require_auth)):
         "links_count": len(snap),
         "active_links": sum(1 for l in snap.values() if is_link_allowed(l)),
         "expired_links": sum(1 for l in snap.values() if is_link_expired(l)),
-        "subs_count": len(SUBS),
     }
 
 # ── Activity Logs ─────────────────────────────────────────────────────────────
@@ -655,66 +481,94 @@ async def get_stats(_=Depends(require_auth)):
 async def get_activity(_=Depends(require_auth)):
     return {"logs": list(activity_logs)[-150:]}
 
-# ── Live connections (with IP) ────────────────────────────────────────────────
+# ── Live connections (با دسته‌بندی بر اساس کانفیگ) ────────────────────────────
 @app.get("/api/connections")
 async def get_connections(_=Depends(require_auth)):
     """
-    خروجی این endpoint حالا بر اساس IP گروه‌بندی شده:
-    هر آی‌پی فقط یک آیتم نمایش داده می‌شود، با جمع بایت‌های تمام سشن‌های
-    باز روی همان آی‌پی و تعداد سشن‌های فعال آن آی‌پی.
-    raw_count همچنان تعداد واقعی اتصالات باز (سشن‌های خام، مثلاً ۴۰ تا
-    اتصال هم‌زمان یک موبایل) را برمی‌گرداند.
+    خروجی این endpoint حالا بر اساس کانفیگ (uuid) گروه‌بندی شده: هر کانفیگ
+    یک آیتم با تعداد آی‌پی/سشن و مجموع ترافیکشه، و داخل هرکدوم لیست
+    آی‌پی‌های متصل به همون کانفیگ (با جمع بایت و تعداد سشن هر آی‌پی) هست.
+    raw_count همچنان تعداد واقعی اتصالات باز (سشن‌های خام) را برمی‌گرداند.
     """
     async with LINKS_LOCK:
         snap = dict(LINKS)
 
-    grouped: dict[str, dict] = {}
+    by_uuid: dict[str, dict] = {}
     for conn_id, c in connections.items():
+        uid = c.get("uuid", "نامشخص")
         ip = c.get("ip", "نامشخص")
-        link = snap.get(c.get("uuid"))
-        label = link.get("label") if link else "نامشخص"
-        g = grouped.get(ip)
-        if g is None:
-            g = {
-                "ip": ip,
+        link = snap.get(uid)
+        label = link.get("label") if link else "کانفیگ حذف‌شده"
+        proto = link.get("protocol", DEFAULT_PROTOCOL) if link else "?"
+
+        cfg = by_uuid.get(uid)
+        if cfg is None:
+            cfg = {
+                "uuid": uid,
+                "label": label,
+                "protocol": proto,
                 "sessions": 0,
                 "bytes": 0,
-                "labels": set(),
-                "transports": set(),
+                "ips": {},
                 "first_connected_at": c.get("connected_at"),
                 "last_connected_at": c.get("connected_at"),
             }
-            grouped[ip] = g
-        g["sessions"] += 1
-        g["bytes"] += c.get("bytes", 0)
-        g["labels"].add(label)
-        g["transports"].add(c.get("transport", "vless-ws"))
-        ca = c.get("connected_at")
-        if ca:
-            if not g["first_connected_at"] or ca < g["first_connected_at"]:
-                g["first_connected_at"] = ca
-            if not g["last_connected_at"] or ca > g["last_connected_at"]:
-                g["last_connected_at"] = ca
+            by_uuid[uid] = cfg
+        cfg["sessions"] += 1
+        cfg["bytes"] += c.get("bytes", 0)
 
-    result = []
-    for ip, g in grouped.items():
-        result.append({
-            "ip": ip,
-            "sessions": g["sessions"],
-            "labels": sorted(g["labels"]),
-            "label": " · ".join(sorted(g["labels"])) if g["labels"] else "نامشخص",
-            "transports": sorted(g["transports"]),
-            "bytes": g["bytes"],
-            "bytes_fmt": fmt_bytes(g["bytes"]),
-            "connected_at": g["first_connected_at"],
-            "last_connected_at": g["last_connected_at"],
+        ip_entry = cfg["ips"].get(ip)
+        if ip_entry is None:
+            ip_entry = {
+                "ip": ip, "sessions": 0, "bytes": 0, "transports": set(),
+                "first_connected_at": c.get("connected_at"),
+                "last_connected_at": c.get("connected_at"),
+            }
+            cfg["ips"][ip] = ip_entry
+        ip_entry["sessions"] += 1
+        ip_entry["bytes"] += c.get("bytes", 0)
+        ip_entry["transports"].add(c.get("transport", "vless-ws"))
+
+        ca = c.get("connected_at")
+        for entry in (cfg, ip_entry):
+            if ca:
+                if not entry["first_connected_at"] or ca < entry["first_connected_at"]:
+                    entry["first_connected_at"] = ca
+                if not entry["last_connected_at"] or ca > entry["last_connected_at"]:
+                    entry["last_connected_at"] = ca
+
+    configs = []
+    for uid, cfg in by_uuid.items():
+        ip_list = []
+        for ip, e in cfg["ips"].items():
+            ip_list.append({
+                "ip": ip,
+                "sessions": e["sessions"],
+                "bytes": e["bytes"],
+                "bytes_fmt": fmt_bytes(e["bytes"]),
+                "transports": sorted(e["transports"]),
+                "connected_at": e["first_connected_at"],
+                "last_connected_at": e["last_connected_at"],
+            })
+        ip_list.sort(key=lambda x: x.get("last_connected_at") or "", reverse=True)
+        configs.append({
+            "uuid": uid,
+            "label": cfg["label"],
+            "protocol": cfg["protocol"],
+            "ip_count": len(ip_list),
+            "sessions": cfg["sessions"],
+            "bytes": cfg["bytes"],
+            "bytes_fmt": fmt_bytes(cfg["bytes"]),
+            "connected_at": cfg["first_connected_at"],
+            "last_connected_at": cfg["last_connected_at"],
+            "connections": ip_list,
         })
-    result.sort(key=lambda x: x.get("last_connected_at") or "", reverse=True)
+    configs.sort(key=lambda x: x.get("last_connected_at") or "", reverse=True)
 
     return {
-        "connections": result,
-        "count": len(result),          # تعداد آی‌پی‌های یکتا
-        "raw_count": len(connections), # تعداد کل اتصالات باز (بدون گروه‌بندی)
+        "configs": configs,
+        "count": len(configs),          # تعداد کانفیگ‌های دارای اتصال فعال
+        "raw_count": len(connections),  # تعداد کل اتصالات باز (بدون گروه‌بندی)
     }
 
 # ── Shared link create/delete helpers (استفاده مشترک API و ربات تلگرام) ───────
@@ -723,7 +577,6 @@ async def make_link(
     limit_bytes: int = 0,
     expires_at: str | None = None,
     note: str = "",
-    sub_id: str | None = None,
     protocol: str = DEFAULT_PROTOCOL,
     fingerprint: str = DEFAULT_FINGERPRINT,
     alpn: str = "",
@@ -749,7 +602,6 @@ async def make_link(
             "expires_at": expires_at,
             "note": (note or "").strip()[:200],
             "is_default": False,
-            "sub_id": sub_id,
             "protocol": protocol,
             "fingerprint": fingerprint,
             "alpn": (alpn or "").strip()[:100],
@@ -757,12 +609,6 @@ async def make_link(
             "ip_limit": max(0, ip_limit),
             "speed_limit_bytes": max(0, speed_limit_bytes),
         }
-    if sub_id:
-        async with SUBS_LOCK:
-            if sub_id in SUBS:
-                ids = SUBS[sub_id].setdefault("link_ids", [])
-                if uid not in ids:
-                    ids.append(uid)
     asyncio.create_task(save_state())
     log_activity("link", f"کانفیگ «{LINKS[uid]['label']}» ساخته شد", "ok")
     return uid, LINKS[uid]
@@ -772,14 +618,7 @@ async def remove_link(uid: str) -> str | None:
         if uid not in LINKS:
             return None
         label = LINKS[uid].get("label", uid)
-        sub_id = LINKS[uid].get("sub_id")
         del LINKS[uid]
-    if sub_id:
-        async with SUBS_LOCK:
-            if sub_id in SUBS:
-                ids = SUBS[sub_id].get("link_ids", [])
-                if uid in ids:
-                    ids.remove(uid)
     asyncio.create_task(save_state())
     log_activity("link", f"کانفیگ «{label}» حذف شد", "err")
     return label
@@ -793,67 +632,6 @@ async def set_link_active(uid: str, active: bool) -> dict | None:
     log_activity("link", f"کانفیگ «{label}» {'فعال' if active else 'غیرفعال'} شد", "ok" if active else "warn")
     asyncio.create_task(save_state())
     return LINKS[uid]
-
-# ── Sub-group helpers (reusable — هم API وب هم ربات تلگرام از همین‌ها استفاده می‌کنن) ──
-async def create_sub_group(name: str = "گروه جدید", desc: str = "", password: str = "") -> tuple[str, dict]:
-    name = (name or "گروه جدید").strip()[:60]
-    desc = (desc or "").strip()[:200]
-    password = (password or "").strip()
-    sub_id = generate_uuid()
-    uuid_key = secrets.token_urlsafe(16)
-    async with SUBS_LOCK:
-        SUBS[sub_id] = {
-            "name": name,
-            "desc": desc,
-            "password_hash": hash_password(password) if password else None,
-            "uuid_key": uuid_key,
-            "created_at": datetime.now().isoformat(),
-            "link_ids": [],
-        }
-    asyncio.create_task(save_state())
-    log_activity("sub", f"گروه «{name}» ساخته شد", "ok")
-    return sub_id, SUBS[sub_id]
-
-async def set_link_sub(uid: str, sub_id: str | None) -> bool:
-    """یک کانفیگ رو به یک گروه ساب اضافه/منتقل می‌کنه؛ با sub_id=None از گروه فعلیش خارجش می‌کنه."""
-    async with LINKS_LOCK:
-        if uid not in LINKS:
-            return False
-        old_sub = LINKS[uid].get("sub_id")
-        label = LINKS[uid].get("label", uid)
-    if sub_id is not None:
-        async with SUBS_LOCK:
-            if sub_id not in SUBS:
-                return False
-    async with SUBS_LOCK:
-        if old_sub and old_sub in SUBS:
-            ids = SUBS[old_sub].get("link_ids", [])
-            if uid in ids:
-                ids.remove(uid)
-        if sub_id and sub_id in SUBS:
-            ids = SUBS[sub_id].setdefault("link_ids", [])
-            if uid not in ids:
-                ids.append(uid)
-    async with LINKS_LOCK:
-        if uid in LINKS:
-            LINKS[uid]["sub_id"] = sub_id
-    asyncio.create_task(save_state())
-    log_activity("link", f"کانفیگ «{label}» {'به گروه اضافه شد' if sub_id else 'از گروه خارج شد'}", "info")
-    return True
-
-async def remove_sub_group(sub_id: str) -> str | None:
-    async with SUBS_LOCK:
-        if sub_id not in SUBS:
-            return None
-        name = SUBS[sub_id].get("name", sub_id)
-        del SUBS[sub_id]
-    async with LINKS_LOCK:
-        for link in LINKS.values():
-            if link.get("sub_id") == sub_id:
-                link["sub_id"] = None
-    asyncio.create_task(save_state())
-    log_activity("sub", f"گروه «{name}» حذف شد", "warn")
-    return name
 
 # ── Link Management ───────────────────────────────────────────────────────────
 @app.post("/api/links")
@@ -882,7 +660,6 @@ async def create_link(request: Request, _=Depends(require_auth)):
         limit_bytes=limit_bytes,
         expires_at=expires_at,
         note=body.get("note") or "",
-        sub_id=body.get("sub_id") or None,
         protocol=body.get("protocol") or DEFAULT_PROTOCOL,
         fingerprint=body.get("fingerprint") or DEFAULT_FINGERPRINT,
         alpn=body.get("alpn") or "",
@@ -897,7 +674,8 @@ async def create_link(request: Request, _=Depends(require_auth)):
         **link,
         "expired": False,
         "vless_link": vless_link_for_link(link, uid, host),
-        "sub_url": f"https://{host}/sub/{uid}",
+        "sub_url": f"https://{host}/p/{uid}",
+        "raw_sub_url": f"https://{host}/sub/{uid}",
     }
 
 @app.get("/api/links")
@@ -914,7 +692,8 @@ async def list_links(request: Request, _=Depends(require_auth)):
             "protocol": proto,
             "expired": is_link_expired(d),
             "vless_link": vless_link_for_link(d, uid, host),
-            "sub_url": f"https://{host}/sub/{uid}",
+            "sub_url": f"https://{host}/p/{uid}",
+            "raw_sub_url": f"https://{host}/sub/{uid}",
             "connected_ips": len(unique_ips_for_uuid(uid)),
         })
     result.sort(key=lambda x: x["created_at"], reverse=True)
@@ -927,7 +706,6 @@ async def update_link(uid: str, request: Request, _=Depends(require_auth)):
         if uid not in LINKS:
             raise HTTPException(status_code=404, detail="link not found")
         link = LINKS[uid]
-        old_sub = link.get("sub_id")
         label = link.get("label")
         if "active" in body:
             link["active"] = bool(body["active"])
@@ -971,20 +749,6 @@ async def update_link(uid: str, request: Request, _=Depends(require_auth)):
             reset_bucket(uid)
         if any(k in body for k in ("label", "note", "limit_value", "expires_days", "fingerprint", "alpn", "port", "ip_limit", "speed_limit_value")):
             log_activity("link", f"کانفیگ «{link['label']}» ویرایش شد", "info")
-        new_sub = body.get("sub_id", "UNCHANGED")
-        if new_sub != "UNCHANGED":
-            link["sub_id"] = new_sub or None
-
-    if new_sub != "UNCHANGED":
-        async with SUBS_LOCK:
-            if old_sub and old_sub in SUBS:
-                ids = SUBS[old_sub].get("link_ids", [])
-                if uid in ids:
-                    ids.remove(uid)
-            if new_sub and new_sub in SUBS:
-                ids = SUBS[new_sub].setdefault("link_ids", [])
-                if uid not in ids:
-                    ids.append(uid)
 
     asyncio.create_task(save_state())
     return {"ok": True}
@@ -1044,71 +808,52 @@ async def http_proxy(target_url: str, request: Request):
         error_logs.append({"error": str(exc), "url": target_url, "time": datetime.now().isoformat()})
         raise HTTPException(status_code=502, detail=f"Proxy error: {exc}")
 
-# ── Public sub page ───────────────────────────────────────────────────────────
+# ── Public sub page (یک صفحه‌ی زیبا و مستقل به‌ازای هر کانفیگ) ────────────────
 @app.get("/p/{uuid_key}", response_class=HTMLResponse)
 async def public_sub_page(uuid_key: str, request: Request):
     from pages import get_public_page_html
-    async with SUBS_LOCK:
-        sub = next(({"sub_id": sid, **s} for sid, s in SUBS.items() if s.get("uuid_key") == uuid_key), None)
-    if not sub:
-        return HTMLResponse("<h2 style='font-family:sans-serif;padding:40px'>گروه پیدا نشد</h2>", status_code=404)
+    async with LINKS_LOCK:
+        exists = uuid_key in LINKS
+    if not exists:
+        return HTMLResponse("<h2 style='font-family:sans-serif;padding:40px'>کانفیگ پیدا نشد</h2>", status_code=404)
     return HTMLResponse(content=get_public_page_html(uuid_key))
 
 @app.get("/api/public/sub/{uuid_key}")
 async def public_sub_data(uuid_key: str, request: Request):
-    async with SUBS_LOCK:
-        sub_entry = next(((sid, s) for sid, s in SUBS.items() if s.get("uuid_key") == uuid_key), None)
-    if not sub_entry:
+    async with LINKS_LOCK:
+        link = LINKS.get(uuid_key)
+    if not link:
         raise HTTPException(status_code=404, detail="not found")
-    sub_id, sub = sub_entry
-
-    has_pw = sub.get("password_hash") is not None
-    if has_pw:
-        pw = request.query_params.get("pw", "")
-        if hash_password(pw) != sub["password_hash"]:
-            return JSONResponse({"locked": True, "name": sub["name"]})
 
     host = get_host(request)
-    link_ids = sub.get("link_ids", [])
-    async with LINKS_LOCK:
-        snap = dict(LINKS)
+    allowed = is_link_allowed(link)
+    conn_count = sum(1 for c in connections.values() if c.get("uuid") == uuid_key)
+    proto = link.get("protocol", DEFAULT_PROTOCOL)
+    link_out = {
+        "uuid": uuid_key,
+        "label": link["label"],
+        "active": allowed,
+        "protocol": proto,
+        "used_bytes": link.get("used_bytes", 0),
+        "used_fmt": fmt_bytes(link.get("used_bytes", 0)),
+        "limit_bytes": link.get("limit_bytes", 0),
+        "limit_fmt": "∞" if link.get("limit_bytes", 0) == 0 else fmt_bytes(link["limit_bytes"]),
+        "expires_at": link.get("expires_at"),
+        "vless_link": vless_link_for_link(link, uuid_key, host),
+        "sub_url": f"https://{host}/sub/{uuid_key}",
+        "connections": conn_count,
+        "ip_limit": link.get("ip_limit", 0),
+        "speed_limit_bytes": link.get("speed_limit_bytes", 0),
+    }
 
-    links_out = []
-    active_conns = 0
-    for lid in link_ids:
-        link = snap.get(lid)
-        if not link:
-            continue
-        allowed = is_link_allowed(link)
-        conn_count = sum(1 for c in connections.values() if c.get("uuid") == lid)
-        active_conns += conn_count
-        proto = link.get("protocol", DEFAULT_PROTOCOL)
-        links_out.append({
-            "uuid": lid,
-            "label": link["label"],
-            "active": allowed,
-            "protocol": proto,
-            "used_bytes": link.get("used_bytes", 0),
-            "used_fmt": fmt_bytes(link.get("used_bytes", 0)),
-            "limit_bytes": link.get("limit_bytes", 0),
-            "limit_fmt": "∞" if link.get("limit_bytes", 0) == 0 else fmt_bytes(link["limit_bytes"]),
-            "expires_at": link.get("expires_at"),
-            "vless_link": vless_link_for_link(link, lid, host),
-            "sub_url": f"https://{host}/sub/{lid}",
-            "connections": conn_count,
-            "ip_limit": link.get("ip_limit", 0),
-            "speed_limit_bytes": link.get("speed_limit_bytes", 0),
-        })
-
-    total_used = sum(l["used_bytes"] for l in links_out)
     return {
         "locked": False,
-        "name": sub["name"],
-        "desc": sub.get("desc", ""),
-        "sub_url": f"https://{host}/sub-group/{uuid_key}",
-        "active_connections": active_conns,
-        "total_used_fmt": fmt_bytes(total_used),
-        "links": links_out,
+        "name": link["label"],
+        "desc": link.get("note", ""),
+        "sub_url": f"https://{host}/p/{uuid_key}",
+        "active_connections": conn_count,
+        "total_used_fmt": fmt_bytes(link.get("used_bytes", 0)),
+        "links": [link_out],
     }
 
 # ── HTML Pages (login + dashboard) ───────────────────────────────────────────
@@ -1124,7 +869,6 @@ async def login_page(request: Request):
 async def dashboard(request: Request):
     if not await is_valid_session(request.cookies.get(SESSION_COOKIE)):
         return RedirectResponse(url="/login")
-    await ensure_default_link()
     return HTMLResponse(content=DASHBOARD_HTML)
 
 @app.get("/test-ws", response_class=HTMLResponse)
